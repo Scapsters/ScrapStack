@@ -1,0 +1,4 @@
+# ignore terraform state files because they're per-developer
+*.tfstate*
+.terraform.lock.hcl
+terraform/.terraform/*
