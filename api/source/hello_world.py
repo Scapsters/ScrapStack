@@ -2,7 +2,7 @@ import json
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
-# uri_template = "mongodb+srv://{}:{}@scrapstackcluster0.kbhra5p.mongodb.net/?retryWrites=true&w=majority&appName=ScrapstackCluster0&tlsAllowInvalidCertificates=true"
+# uri_template = "mongodb+srv://{}:{}@scrapstackcluster0.kbhra5p.mongodb.net/?retryWrites=true&w=majority&appName=ScrapstackCluster0"
 
 def hello_world(event, context):
     # Create a new client and connect to the server
