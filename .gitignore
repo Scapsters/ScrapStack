@@ -3,3 +3,4 @@
 .terraform.lock.hcl
 terraform/.terraform/*
 lambda.zip
+dev_variables.tfvars
