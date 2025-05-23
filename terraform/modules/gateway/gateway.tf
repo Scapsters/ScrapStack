@@ -15,7 +15,7 @@ resource "aws_api_gateway_rest_api" "scrapstack" {
 resource "aws_api_gateway_resource" "hello_world" {
   rest_api_id = aws_api_gateway_rest_api.scrapstack.id
   parent_id = aws_api_gateway_rest_api.scrapstack.root_resource_id
-  path_part = "hello-world"
+  path_part = "hello_world"
 }
 
 # each resource implemented with lambdas consists of method, integration, method response, and integration response
