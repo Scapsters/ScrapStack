@@ -7,7 +7,7 @@ resource "aws_lambda_function" "hello_world" {
   function_name = "hello_world"
   role          = aws_iam_role.lambda_exec.arn
   handler       = "hello_world.hello_world"
-  runtime       = "python3.9"
+  runtime       = var.python_runtime
 
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 }
