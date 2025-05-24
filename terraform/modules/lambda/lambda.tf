@@ -1,6 +1,15 @@
 data "aws_caller_identity" "current" {}
 
 #
+# Module structure:
+# /lambda (this directory): stores absolutely general information that is general to all lambdas
+# /dependencies: stores the dependencies layer
+# /model: stores the model layer
+# /api: stores resources general to all resources/endpoints and also for specific functions
+#
+
+
+#
 # When adding a function, create a new file or folder as appropriate. The only code to update here is THIS block. 
 # Add your function to "depends_on" AND to "command"
 #
@@ -70,18 +79,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
   source_arn    = "${var.api_gateway_execution_arn}/*/*"
 }
 
-# zip dependencies
-data "archive_file" "lambda_layer_dependencies_zip" {
-  type        = "zip"
-  source_dir  = "../api/source"
-  output_path = "../api/dist/source.zip"
-}
-
-# allow all lambdas to use the same set of dependencies. This might break concurrent database accessing if AWS is stupid enough. It shouldn't. Just saves upload space and dependency management
-resource "aws_lambda_layer_version" "lambda_layer_dependencies" {
-  filename   = data.archive_file.lambda_layer_dependencies_zip.output_path
-  layer_name = "lambda_layer_dependencies"
-
-  compatible_runtimes = [var.python_runtime]
-  source_code_hash    = data.archive_file.lambda_layer_dependencies_zip.output_base64sha256
+module "api" {
+  source = "api"
+  python_runtime = var.python_runtime
 }
