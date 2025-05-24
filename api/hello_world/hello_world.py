@@ -1,4 +1,23 @@
 import json
+
+#
+# Copy lines 7-19 for every new lambda
+#
+
+# Access lambda layer
+import sys
+import os
+sys.path.append('/opt')
+
+# Make our python happy
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), '..', 'source'
+        )
+    )
+)
+
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
@@ -29,5 +48,5 @@ def hello_world(event, context):
 
     return response
 
-# these local tests don't work either on my machine
+# these local tests don't work either on my machine - I got them working? idkwym
 # print(hello_world({'db_username': 'tester', 'db_password': 'yp1DVeZD1fY4zslf'}, {}))
