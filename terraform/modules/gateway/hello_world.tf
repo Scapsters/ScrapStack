@@ -56,6 +56,6 @@ resource "aws_api_gateway_integration_response" "hello_world_proxy" {
 
   depends_on = [
     aws_api_gateway_method.hello_world_proxy,
-    aws_api_gateway_integration.lambda_integration
+    aws_api_gateway_integration.hello_world_lambda_integration
   ]
 }
