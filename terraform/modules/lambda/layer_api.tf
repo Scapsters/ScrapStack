@@ -14,5 +14,5 @@ resource "aws_lambda_layer_version" "lambda_layer_model" {
   layer_name = "lambda_layer_model"
 
   compatible_runtimes = [var.python_runtime]
-  source_code_hash    = data.archive_file.lambda_layer_models_zip.output_base64sha256
+  source_code_hash    = data.archive_file.lambda_layer_model_zip.output_base64sha256
 }
