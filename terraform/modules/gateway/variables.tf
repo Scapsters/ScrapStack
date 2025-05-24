@@ -1,3 +1,7 @@
+#
+# Add an invoke arn for every function, and then reference it in main.tf
+#
+
 variable "hello_world_invoke_arn" {
   description = "The invoke arn for the hello world lambda"
   type        = string

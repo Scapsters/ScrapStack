@@ -29,6 +29,10 @@ module "cloudwatch" {
   source = "./modules/cloudwatch"
 }
 
+#
+# Add here when adding new functions. Then, use it in gateway/gateway.tf
+#
+
 module "gateway" {
   source                 = "./modules/gateway"
   hello_world_invoke_arn = module.lambda.hello_world_invoke_arn
