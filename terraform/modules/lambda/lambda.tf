@@ -1,13 +1,8 @@
 data "aws_caller_identity" "current" {}
 
 #
-# Module structure:
-# /lambda (this directory): stores absolutely general information that is general to all lambdas
-# /dependencies: stores the dependencies layer
-# /model: stores the model layer
-# /api: stores resources general to all resources/endpoints and also for specific functions
+# Open adding_lambdas.excalidraw in in either https://excalidraw.com or by downloading the vscode extension for it
 #
-
 
 #
 # When adding a function, create a new file or folder as appropriate. The only code to update here is THIS block. 
