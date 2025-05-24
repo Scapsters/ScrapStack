@@ -4,7 +4,7 @@
 
 # Define the function and where the zip is (will be)
 resource "aws_lambda_function" "hello_world" {
-  layers = [ aws_lambda_layer_version.lambda_layer_dependencies.arn ]
+  layers = [aws_lambda_layer_version.lambda_layer_dependencies.arn]
 
   filename      = data.archive_file.hello_world_lambda_zip.output_path
   function_name = "hello_world"
@@ -24,5 +24,5 @@ data "archive_file" "hello_world_lambda_zip" {
 
 # Output the URL (:
 output "hello_world_invoke_arn" {
-    value = aws_lambda_function.hello_world.invoke_arn
+  value = aws_lambda_function.hello_world.invoke_arn
 }

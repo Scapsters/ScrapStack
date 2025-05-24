@@ -7,17 +7,17 @@ data "aws_caller_identity" "current" {}
 
 resource "null_resource" "delete_lambda_source_zip" {
 
-  depends_on = [ 
-    aws_lambda_function.hello_world 
+  depends_on = [
+    aws_lambda_function.hello_world
   ]
 
-    provisioner "local-exec" {
-    command = <<EOT
+  provisioner "local-exec" {
+    command     = <<EOT
 #!/bin/bash
 rm ../api/dist/source.zip
 rm ../api/dist/hello_world.zip
     EOT
-    interpreter = [ "bash", "-c" ]
+    interpreter = ["bash", "-c"]
   } # Will rm ../api/dist work or do i haev to rm every file
 
   triggers = {
@@ -63,11 +63,11 @@ resource "aws_iam_policy_attachment" "lambda_policy" {
 
 # give gateway invokers the lambda invoke policy
 resource "aws_lambda_permission" "apigw_lambda" {
-  statement_id = "AllowExecutionFromAPIGateway"
-  action = "lambda:InvokeFunction"
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.hello_world.function_name
-  principal = "apigateway.amazonaws.com"
-  source_arn = "${var.api_gateway_execution_arn}/*/*"
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${var.api_gateway_execution_arn}/*/*"
 }
 
 # zip dependencies
@@ -79,9 +79,9 @@ data "archive_file" "lambda_layer_dependencies_zip" {
 
 # allow all lambdas to use the same set of dependencies. This might break concurrent database accessing if AWS is stupid enough. It shouldn't. Just saves upload space and dependency management
 resource "aws_lambda_layer_version" "lambda_layer_dependencies" {
-  filename = data.archive_file.lambda_layer_dependencies_zip.output_path
+  filename   = data.archive_file.lambda_layer_dependencies_zip.output_path
   layer_name = "lambda_layer_dependencies"
 
-  compatible_runtimes = [ var.python_runtime ]
-  source_code_hash = data.archive_file.lambda_layer_dependencies_zip.output_base64sha256
+  compatible_runtimes = [var.python_runtime]
+  source_code_hash    = data.archive_file.lambda_layer_dependencies_zip.output_base64sha256
 }

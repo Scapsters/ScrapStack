@@ -1,13 +1,13 @@
 resource "aws_iam_role" "apigateway_cloudwatch" {
   name = "apigateway_cloudwatch_role"
   assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [{
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "apigateway.amazonaws.com"
+    "Version" : "2012-10-17",
+    "Statement" : [{
+      "Effect" : "Allow",
+      "Principal" : {
+        "Service" : "apigateway.amazonaws.com"
       },
-      "Action": "sts:AssumeRole"
+      "Action" : "sts:AssumeRole"
     }]
   })
 }
@@ -22,6 +22,6 @@ resource "aws_api_gateway_account" "account" {
 }
 
 resource "aws_cloudwatch_log_group" "gateway_log_group" {
-    name = "/aws/ScrapStack/gateway"
-    retention_in_days = 7
+  name              = "/aws/ScrapStack/gateway"
+  retention_in_days = 7
 }
