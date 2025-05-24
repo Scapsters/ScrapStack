@@ -5,12 +5,6 @@ data "aws_caller_identity" "current" {}
 # Add your function to "depends_on"
 #
 
-#
-# GLOBALS
-#
-# used for every function you will make ever
-# probably don't have to remake these
-
 resource "null_resource" "delete_lambda_source_zip" {
 
   depends_on = [ 
@@ -29,6 +23,13 @@ rm ../api/dist
     always_run = timestamp()
   }
 }
+
+#
+# OTHER GLOBALS
+#
+# used for every function you will make ever
+# probably don't have to remake or edit these
+#
 
 # create a role that can execute lambda
 # our function calls the lambda through this role
