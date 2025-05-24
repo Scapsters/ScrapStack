@@ -1,7 +1,8 @@
 data "aws_caller_identity" "current" {}
 
 #
-# Don't add functions here. create a file for your resource, or a folder if its appropriate. See hello_world.tf for an example.
+# When adding a function, create a new file or folder as appropriate. The only code to update here is THIS block. 
+# Add your function to "depends_on"
 #
 
 #
@@ -9,6 +10,25 @@ data "aws_caller_identity" "current" {}
 #
 # used for every function you will make ever
 # probably don't have to remake these
+
+resource "null_resource" "delete_lambda_source_zip" {
+
+  depends_on = [ 
+    aws_lambda_function.hello_world 
+  ]
+
+    provisioner "local-exec" {
+    command = <<EOT
+#!/bin/bash
+rm ../api/dist
+    EOT
+    interpreter = [ "bash", "-c" ]
+  } # Will rm ../api/dist work or do i haev to rm every file
+
+  triggers = {
+    always_run = timestamp()
+  }
+}
 
 # create a role that can execute lambda
 # our function calls the lambda through this role
