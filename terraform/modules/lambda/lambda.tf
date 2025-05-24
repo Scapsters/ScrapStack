@@ -69,8 +69,3 @@ resource "aws_iam_policy_attachment" "lambda_policy" {
   roles      = [aws_iam_role.lambda_exec.name]
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
-
-module "api" {
-  source = "api"
-  python_runtime = var.python_runtime
-}
