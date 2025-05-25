@@ -1,0 +1,226 @@
+Generate a Python CLI tool that when called and given:
+ - a lambda name in the form of my_lambda_name 
+ - an action (GET, etc)
+
+Will create a file in the relative directory: ../modules/gateway/[my_lambda_name].tf
+and add THIS code 
+(
+    # dictates the path for the request
+    # these resources will be available at <URL>/hello-world
+    resource "aws_api_gateway_resource" "hello_world" {
+    rest_api_id = aws_api_gateway_rest_api.scrapstack.id
+    parent_id   = aws_api_gateway_rest_api.scrapstack.root_resource_id
+    path_part   = "hello_world"
+    }
+
+    # each resource implemented with lambdas consists of method, integration, method response, and integration response
+    # here, "get" on hello-world is done as follows
+
+    resource "aws_api_gateway_method" "hello_world_proxy" {
+    rest_api_id   = aws_api_gateway_rest_api.scrapstack.id
+    resource_id   = aws_api_gateway_resource.hello_world.id
+    http_method   = "GET"
+    authorization = "NONE"
+    }
+
+    # IMPORTANT NOTE
+    # gateways always POST to lambdas, REGARDLESS of the actual gateway request method
+    resource "aws_api_gateway_integration" "hello_world_lambda_integration" {
+    rest_api_id             = aws_api_gateway_rest_api.scrapstack.id
+    resource_id             = aws_api_gateway_resource.hello_world.id
+    http_method             = aws_api_gateway_method.hello_world_proxy.http_method
+    integration_http_method = "POST"
+    type                    = "AWS_PROXY"
+    uri                     = var.hello_world_invoke_arn
+    }
+
+    resource "aws_api_gateway_method_response" "hello_world_proxy" {
+    rest_api_id = aws_api_gateway_rest_api.scrapstack.id
+    resource_id = aws_api_gateway_resource.hello_world.id
+    http_method = aws_api_gateway_method.hello_world_proxy.http_method
+    status_code = "200"
+
+    # necessary because cors is whiny
+    response_parameters = {
+        "method.response.header.Access-Control-Allow-Headers" = true,
+        "method.response.header.Access-Control-Allow-Methods" = true,
+        "method.response.header.Access-Control-Allow-Origin"  = true
+    }
+    }
+
+    resource "aws_api_gateway_integration_response" "hello_world_proxy" {
+    rest_api_id = aws_api_gateway_rest_api.scrapstack.id
+    resource_id = aws_api_gateway_resource.hello_world.id
+    http_method = aws_api_gateway_method.hello_world_proxy.http_method
+    status_code = aws_api_gateway_method_response.hello_world_proxy.status_code
+
+    # necessary because cors is whiny
+    response_parameters = {
+        "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'",
+        "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    }
+
+    depends_on = [
+        aws_api_gateway_method.hello_world_proxy,
+        aws_api_gateway_integration.hello_world_lambda_integration
+    ]
+    }
+
+
+
+    Ensure pythonic coding practices, and ensure that preexisting files are never deleted or overwritten.
+)
+
+into the file but REPLACE every instance of hello_world with my_lambda_name. 
+Additionally, in the template that you create, replace hello_world with a more variable-like name.
+
+then, take the file in the relative directory: ../modules/lambda/lambda.tf
+and find where THIS piece of code is
+(
+    resource "null_resource" "delete_lambda_source_zip" {
+
+    depends_on = [
+        aws_lambda_function.hello_world
+    ]
+
+    provisioner "local-exec" {
+        command     = <<EOT
+    #!/bin/bash
+    rm ../api/dist/source.zip
+    rm ../api/dist/hello_world.zip
+        EOT
+        interpreter = ["bash", "-c"]
+    } # Will rm ../api/dist work or do i haev to rm every file
+
+    triggers = {
+        always_run = timestamp()
+    }
+    }
+)
+and then edit "depends_on" and "command" to include the new lambda created, following the format of the hello_world. 
+Don't remove or replace hello_world from this file. When detecting this block of code, first look for the resource name, 
+and then look for the relevant attribute, like "command" or "depends_on" 
+
+Then, create a file in the relative directory: ../modules/gateway/[my_lambda_name].tf
+and add THIS code
+(
+    # dictates the path for the request
+    # these resources will be available at <URL>/hello-world
+    resource "aws_api_gateway_resource" "hello_world" {
+    rest_api_id = aws_api_gateway_rest_api.scrapstack.id
+    parent_id   = aws_api_gateway_rest_api.scrapstack.root_resource_id
+    path_part   = "hello_world"
+    }
+
+    # each resource implemented with lambdas consists of method, integration, method response, and integration response
+    # here, "get" on hello-world is done as follows
+
+    resource "aws_api_gateway_method" "hello_world_proxy" {
+    rest_api_id   = aws_api_gateway_rest_api.scrapstack.id
+    resource_id   = aws_api_gateway_resource.hello_world.id
+    http_method   = "GET"
+    authorization = "NONE"
+    }
+
+    # IMPORTANT NOTE
+    # gateways always POST to lambdas, REGARDLESS of the actual gateway request method
+    resource "aws_api_gateway_integration" "hello_world_lambda_integration" {
+    rest_api_id             = aws_api_gateway_rest_api.scrapstack.id
+    resource_id             = aws_api_gateway_resource.hello_world.id
+    http_method             = aws_api_gateway_method.hello_world_proxy.http_method
+    integration_http_method = "POST"
+    type                    = "AWS_PROXY"
+    uri                     = var.hello_world_invoke_arn
+    }
+
+    resource "aws_api_gateway_method_response" "hello_world_proxy" {
+    rest_api_id = aws_api_gateway_rest_api.scrapstack.id
+    resource_id = aws_api_gateway_resource.hello_world.id
+    http_method = aws_api_gateway_method.hello_world_proxy.http_method
+    status_code = "200"
+
+    # necessary because cors is whiny
+    response_parameters = {
+        "method.response.header.Access-Control-Allow-Headers" = true,
+        "method.response.header.Access-Control-Allow-Methods" = true,
+        "method.response.header.Access-Control-Allow-Origin"  = true
+    }
+    }
+
+    resource "aws_api_gateway_integration_response" "hello_world_proxy" {
+    rest_api_id = aws_api_gateway_rest_api.scrapstack.id
+    resource_id = aws_api_gateway_resource.hello_world.id
+    http_method = aws_api_gateway_method.hello_world_proxy.http_method
+    status_code = aws_api_gateway_method_response.hello_world_proxy.status_code
+
+    # necessary because cors is whiny
+    response_parameters = {
+        "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST,PUT'",
+        "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    }
+
+    depends_on = [
+        aws_api_gateway_method.hello_world_proxy,
+        aws_api_gateway_integration.hello_world_lambda_integration
+    ]
+    }
+)
+into the file but REPLACE every instance of hello_world with my_lambda_name. 
+Additionally, in the template that you create, replace hello_world with a more variable-like name.
+Additionally, replace the HTTP action with the one i provide.
+
+Then, in the file at relative directory: ../gateway/gateway.tf,
+find this block of code
+(
+    resource "aws_api_gateway_deployment" "deployment" {
+        depends_on = [
+            aws_api_gateway_integration.hello_world_lambda_integration
+        ]
+
+        rest_api_id = aws_api_gateway_rest_api.scrapstack.id
+        }
+)
+then edit "depends_on" to include the new lambda created, following the format of the  hello_world.
+Don't remove or replace hello_world from this file. When detecting this block of code, first look for the resource name, 
+and then look for the relevant attribute, in order to prevent failing to detect the code block even when the file changes
+
+Then, in ../gateway/variables.tf, append the following block of code:
+(
+    variable "hello_world_invoke_arn" {
+        description = "The invoke arn for the hello_world lambda"
+        type        = string
+        }
+)
+into the file but REPLACE every instance of hello_world with my_lambda_name. 
+Additionally, in the template that you create, replace hello_world with a more variable-like name.
+
+Then, in ../output.tf, append the following block of code:
+(
+    output "hello_world_gateway_endpoint" {
+    description = "GET request to this to call the hello world endpoint"
+    value       = module.gateway.api_gateway_hello_world_endpoint_url
+    }
+)
+into the file but REPLACE every instance of hello_world with my_lambda_name. 
+Additionally, in the template that you create, replace hello_world with a more variable-like name.
+
+Then, in ../main.tf, find the following block of code:
+(
+    module "gateway" {
+        source                 = "./modules/gateway"
+        hello_world_invoke_arn = module.lambda.hello_world_invoke_arn
+        stage_name             = var.stage_name
+        gateway_log_group      = module.cloudwatch.gateway_log_group_arn
+        cloudwatch_role_arn    = module.cloudwatch.cloudwatch_role_arn
+        }
+)
+and then add a new [my_lambda_name]_invoke_arn assignment to include the new lambda created, following the format of the hello_world one. 
+Don't remove or replace hello_world from this file. When detecting this block of code, first look for the resource name, 
+and then look for the relevant attribute
+
+when generating templates, please put the template code into a different file if possible and import into the python. 
+Maintain pythonic coding practices, and create a maintainable, high quality, and robust piece of code. Include comments to explain
+decisions that might be considered messy code, and provide descriptive yet short variable names. 
+
