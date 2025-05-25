@@ -1,6 +1,34 @@
 import json
+
+#
+# Copy lines 7-19 for every new lambda
+#
+
+# Access lambda layer
+import sys
+import os
+sys.path.append('/opt')
+
+# Make our python happy
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), '..', '..', 'source'
+        )
+    )
+)
+
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), '..', '..', 'model'
+        )
+    )
+)
+
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from hello.hello_model import hello_model
 
 # uri_template = "mongodb+srv://{}:{}@scrapstackcluster0.kbhra5p.mongodb.net/?retryWrites=true&w=majority&appName=ScrapstackCluster0"
 
@@ -16,6 +44,8 @@ def hello_world(event, context):
     # except Exception as e:
     #     print(e)
 
+    model_info = hello_model()
+
     response = {
         "statusCode": 200,
         "headers": {
@@ -23,11 +53,11 @@ def hello_world(event, context):
             "Access-Control-Allow-Origin": "*"
         },
         "body": json.dumps({
-            "message": "Hello world!"
+            "message": model_info
         })
     }
 
     return response
 
-# these local tests don't work either on my machine
+# these local tests don't work either on my machine - I got them working? idkwym
 # print(hello_world({'db_username': 'tester', 'db_password': 'yp1DVeZD1fY4zslf'}, {}))
