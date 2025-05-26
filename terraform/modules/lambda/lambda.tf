@@ -12,7 +12,7 @@ data "aws_caller_identity" "current" {}
 resource "null_resource" "delete_lambda_source_zip" {
 
   depends_on = [
-    aws_lambda_function.hello_world
+    aws_lambda_function.hello_world,
   ]
 
   provisioner "local-exec" {
