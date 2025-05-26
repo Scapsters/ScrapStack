@@ -1,6 +1,7 @@
 Generate a Python CLI tool that when called and given:
  - a lambda name in the form of my_lambda_name 
  - an action (GET, etc)
+in the form of 2 command line arguments
 
 Will create a file in the relative directory: ../modules/gateway/[my_lambda_name].tf
 and add THIS code 

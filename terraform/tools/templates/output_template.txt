@@ -1,4 +1,4 @@
-output "${lambda_name}_gateway_endpoint" {
-  description = "${http_method} request to this to call the ${lambda_name} endpoint"
-  value       = module.gateway.api_gateway_${lambda_name}_endpoint_url
+output "{name}_gateway_endpoint" {
+  description = "{action} request to this to call the {name} endpoint"
+  value       = module.gateway.api_gateway_{name}_endpoint_url
 }
