@@ -15,7 +15,7 @@ def load_template(template_path):
 # --- Template Processing ---
 def render_template(template, lambda_name, action):
     # Replace variable-like placeholders
-    return template.replace("hello_world", lambda_name).replace("GET", action.upper())
+    return template.replace("{name}", lambda_name).replace("{action}", action.upper())
 
 # --- File Writing Helper ---
 def write_file_if_not_exists(path, content):
@@ -27,7 +27,7 @@ def write_file_if_not_exists(path, content):
         print(f"[CREATED] File: {path}")
 
 # --- File Editing Helper ---
-def insert_into_block(file_path, resource_name, attribute, new_line):
+def insert_into_block(file_path, resource_name, attribute, new_line, list_end_identifier):
     with open(file_path, "r") as f:
         lines = f.readlines()
 
@@ -43,7 +43,7 @@ def insert_into_block(file_path, resource_name, attribute, new_line):
             indent = re.match(r"^(\s*)", line).group(1)
             continue
 
-        if inside_attribute and "]" in line:
+        if inside_attribute and list_end_identifier in line:
             lines.insert(i, f"{indent}{new_line},\n")
             break
 
@@ -54,7 +54,6 @@ def insert_into_block(file_path, resource_name, attribute, new_line):
 def append_block_to_file(file_path, block):
     with open(file_path, "a") as f:
         f.write("\n" + block + "\n")
-        print(f"[APPENDED] Block appended to: {file_path}")
 
 # --- CLI Tool ---
 def main():
@@ -81,22 +80,24 @@ def main():
     write_file_if_not_exists(gateway_tf_path, rendered)
 
     # --- Edit lambda.tf ---
-    insert_into_block(lambda_tf_path, "null_resource", "depends_on", f"        aws_lambda_function.{lambda_name}")
-    insert_into_block(lambda_tf_path, "null_resource", "command", f"rm ../api/dist/{lambda_name}.zip")
+    insert_into_block(lambda_tf_path, "null_resource", "depends_on", f"    aws_lambda_function.{lambda_name}", "]")
+    insert_into_block(lambda_tf_path, "null_resource", "command", f"rm ../api/dist/{lambda_name}.zip", "rm ../")
 
     # --- Edit gateway.tf ---
-    insert_into_block(gateway_main_tf_path, "aws_api_gateway_deployment", "depends_on", f"            aws_api_gateway_integration.{lambda_name}_lambda_integration")
+    insert_into_block(gateway_main_tf_path, "aws_api_gateway_deployment", "depends_on", f"  aws_api_gateway_integration.{lambda_name}_lambda_integration", "]")
 
     # --- Append to variables.tf ---
-    variables_template = load_template(VARIABLES_TEMPLATE).replace("hello_world", lambda_name)
-    append_block_to_file(variables_tf_path, variables_template)
+    variables_template  = load_template(VARIABLES_TEMPLATE)
+    rendered            = render_template(variables_template, lambda_name, action)
+    append_block_to_file(variables_tf_path, rendered)
 
     # --- Append to output.tf ---
-    output_template = load_template(OUTPUT_TEMPLATE).replace("hello_world", lambda_name).replace("GET", action)
-    append_block_to_file(outputs_tf_path, output_template)
+    output_template     = load_template(OUTPUT_TEMPLATE)
+    rendered            = render_template(output_template, lambda_name, action)
+    append_block_to_file(outputs_tf_path, rendered)
 
     # --- Edit main.tf ---
-    insert_into_block(main_tf_path, "module \"gateway\"", "", f"    {lambda_name}_invoke_arn = module.lambda.{lambda_name}_invoke_arn")
+    insert_into_block(main_tf_path, "module \"gateway\"", "", f"    {lambda_name}_invoke_arn = module.lambda.{lambda_name}_invoke_arn", "}")
 
 if __name__ == "__main__":
     main()
