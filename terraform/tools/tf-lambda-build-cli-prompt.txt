@@ -171,7 +171,7 @@ into the file but REPLACE every instance of hello_world with my_lambda_name.
 Additionally, in the template that you create, replace hello_world with a more variable-like name.
 Additionally, replace the HTTP action with the one i provide.
 
-Then, in the file at relative directory: ../gateway/gateway.tf,
+Then, in the file at relative directory: ../modules/gateway/gateway.tf,
 find this block of code
 (
     resource "aws_api_gateway_deployment" "deployment" {
@@ -186,7 +186,7 @@ then edit "depends_on" to include the new lambda created, following the format o
 Don't remove or replace hello_world from this file. When detecting this block of code, first look for the resource name, 
 and then look for the relevant attribute, in order to prevent failing to detect the code block even when the file changes
 
-Then, in ../gateway/variables.tf, append the following block of code:
+Then, in ../modules/gateway/variables.tf, append the following block of code:
 (
     variable "hello_world_invoke_arn" {
         description = "The invoke arn for the hello_world lambda"
@@ -224,3 +224,4 @@ when generating templates, please put the template code into a different file if
 Maintain pythonic coding practices, and create a maintainable, high quality, and robust piece of code. Include comments to explain
 decisions that might be considered messy code, and provide descriptive yet short variable names. 
 
+template files will be stored in .txt.

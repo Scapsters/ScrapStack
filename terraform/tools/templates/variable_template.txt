@@ -1,0 +1,4 @@
+variable "${lambda_name}_invoke_arn" {
+  description = "The invoke ARN for the ${lambda_name} Lambda function"
+  type        = string
+}
