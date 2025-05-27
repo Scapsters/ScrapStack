@@ -1,103 +1,100 @@
+# Add lambdas automatically in several places throughout our terraform files.
+
 import os
-import re
+import argparse
 
-# --- Constants ---
-TEMPLATES_DIR = "./templates"
-LAMBDA_TEMPLATE = os.path.join(TEMPLATES_DIR, "gateway_resource_template.txt")
-VARIABLES_TEMPLATE = os.path.join(TEMPLATES_DIR, "variables_template.txt")
-OUTPUT_TEMPLATE = os.path.join(TEMPLATES_DIR, "output_template.txt")
+ROOT_DIR        = ".."
+LAMBDA_DIR      = "../modules/lambda"
+GATEWAY_DIR     = "../modules/gateway"
+TEMPLATES_DIR   = "./templates"
+    
+def find_marker(template: list[str], marker: str):
+    for i, line in enumerate(template):
+        if line.find(marker) != -1:
+            return i
+    return -1
 
-# --- Helper Function ---
-def load_template(template_path):
+# Markers are specific comments in terraform files  
+def insert_above_marker(filepath: str, marker: str, text: str):
+    with open(filepath, "r") as file:
+        lines = file.readlines() 
+    
+    marker_index = find_marker(lines, marker)
+    lines.insert(marker_index, text)
+    
+    with open(filepath, "w") as file:
+        file.writelines(lines)
+
+# Format a template and insert it somewhere
+def use_template(template_path: str, destination_path: str, lambda_name: str, action: str, do_append: bool = False):
     with open(template_path, "r") as file:
-        return file.read()
-
-# --- Template Processing ---
-def render_template(template, lambda_name, action):
-    # Replace variable-like placeholders
-    return template.replace("{name}", lambda_name).replace("{action}", action.upper())
-
-# --- File Writing Helper ---
-def write_file_if_not_exists(path, content):
-    if os.path.exists(path):
-        print(f"[SKIPPED] File already exists: {path}")
-        return
-    with open(path, "w") as file:
-        file.write(content)
-        print(f"[CREATED] File: {path}")
-
-# --- File Editing Helper ---
-def insert_into_block(file_path, resource_name, attribute, new_line, list_end_identifier):
-    with open(file_path, "r") as f:
-        lines = f.readlines()
-
-    inside_resource = False
-    inside_attribute = False
-    indent = ""
-    for i, line in enumerate(lines):
-        if line.strip().startswith(f'resource "{resource_name}"'):
-            inside_resource = True
-
-        if inside_resource and line.strip().startswith(attribute):
-            inside_attribute = True
-            indent = re.match(r"^(\s*)", line).group(1)
-            continue
-
-        if inside_attribute and list_end_identifier in line:
-            lines.insert(i, f"{indent}{new_line},\n")
-            break
-
-    with open(file_path, "w") as f:
-        f.writelines(lines)
-
-# --- Appending to file ---
-def append_block_to_file(file_path, block):
-    with open(file_path, "a") as f:
-        f.write("\n" + block + "\n")
-
-# --- CLI Tool ---
+        template = file.read()
+        
+    template.replace("{lambda_name}", lambda_name)
+    template.replace("{action}", action)
+    
+    with open(destination_path, "a" if do_append else "w") as file:
+        file.write(template + "\n")
+    
+# Follows adding_lambdas.excalidraw
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Create new lambda gateway integration.")
+    parser = argparse.ArgumentParser(description="Create new lambda")
     parser.add_argument("lambda_name", type=str, help="Lambda name in snake_case")
     parser.add_argument("action", type=str, help="HTTP method (e.g., GET, POST)")
-
     args = parser.parse_args()
     lambda_name = args.lambda_name
     action = args.action.upper()
-
-    # --- Paths ---
-    gateway_tf_path = f"../modules/gateway/{lambda_name}.tf"
-    lambda_tf_path = "../modules/lambda/lambda.tf"
-    gateway_main_tf_path = "../modules/gateway/gateway.tf"
-    variables_tf_path = "../modules/gateway/variables.tf"
-    outputs_tf_path = "../output.tf"
-    main_tf_path = "../main.tf"
-
-    # --- Generate gateway TF file ---
-    gateway_template = load_template(LAMBDA_TEMPLATE)
-    rendered = render_template(gateway_template, lambda_name, action)
-    write_file_if_not_exists(gateway_tf_path, rendered)
-
-    # --- Edit lambda.tf ---
-    insert_into_block(lambda_tf_path, "null_resource", "depends_on", f"    aws_lambda_function.{lambda_name}", "]")
-    insert_into_block(lambda_tf_path, "null_resource", "command", f"rm ../api/dist/{lambda_name}.zip", "rm ../")
-
-    # --- Edit gateway.tf ---
-    insert_into_block(gateway_main_tf_path, "aws_api_gateway_deployment", "depends_on", f"  aws_api_gateway_integration.{lambda_name}_lambda_integration", "]")
-
-    # --- Append to variables.tf ---
-    variables_template  = load_template(VARIABLES_TEMPLATE)
-    rendered            = render_template(variables_template, lambda_name, action)
-    append_block_to_file(variables_tf_path, rendered)
-
-    # --- Append to output.tf ---
-    output_template     = load_template(OUTPUT_TEMPLATE)
-    rendered            = render_template(output_template, lambda_name, action)
-    append_block_to_file(outputs_tf_path, rendered)
-
-    # --- Edit main.tf ---
-    insert_into_block(main_tf_path, "module \"gateway\"", "", f"    {lambda_name}_invoke_arn = module.lambda.{lambda_name}_invoke_arn", "}")
-
-if __name__ == "__main__":
-    main()
+    
+    # Lambda changes
+    use_template(
+        f"{TEMPLATES_DIR}/lambda_main.template", 
+        f"{LAMBDA_DIR}/{lambda_name}.tf", 
+        lambda_name, 
+        action,
+        do_append = False
+    )
+    insert_above_marker(
+        f"{LAMBDA_DIR}/lambda.tf", 
+        "this is the command marker for the build tool",
+        f"rm ../api/dist/{lambda_name}.zip"
+    )
+    insert_above_marker(
+        f"{LAMBDA_DIR}/lambda.tf", 
+        "this is the depends_on marker for the build tool",
+        f"    aws_lambda_function.{lambda_name},"
+    )
+    
+    # Gateway changes
+    use_template(
+        f"{TEMPLATES_DIR}/gateway_main.template",
+        f"{GATEWAY_DIR}/{lambda_name}.tf",
+        lambda_name,
+        action,
+        do_append = False
+    )
+    insert_above_marker(
+        f"{GATEWAY_DIR}/gateway.tf",
+        "this is the depends_on marker for the build tool",
+        f"    aws_api_gateway_integration.{lambda_name}_lambda_integration,"
+    )
+    use_template(
+        f"{TEMPLATES_DIR}/gateway_invoke_arn_variable.template",
+        f"{GATEWAY_DIR}/variables.tf",
+        lambda_name,
+        action,
+        do_append = True
+    )
+    
+    # Main changes
+    use_template(
+        f"{TEMPLATES_DIR}/output_main.template",
+        f"{ROOT_DIR}/output.tf",
+        lambda_name,
+        action,
+        do_append = True
+    )
+    insert_above_marker(
+        f"{ROOT_DIR}/main.tf",
+        "this is the invoke arn marker for the build tool",
+        f"  {lambda_name}_invoke_arn = module.lambda.{lambda_name}_invoke_arn"
+    )

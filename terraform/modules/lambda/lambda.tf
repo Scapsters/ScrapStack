@@ -13,6 +13,8 @@ resource "null_resource" "delete_lambda_source_zip" {
 
   depends_on = [
     aws_lambda_function.hello_world,
+
+    # this is the depends_on marker for the build tool
   ]
 
   provisioner "local-exec" {
@@ -20,7 +22,9 @@ resource "null_resource" "delete_lambda_source_zip" {
 #!/bin/bash
 rm ../api/dist/source.zip
 rm ../api/dist/hello_world.zip
-    EOT
+
+# this is the command marker for the build tool
+    EOT 
     interpreter = ["bash", "-c"]
   } # Will rm ../api/dist work or do i haev to rm every file
 
