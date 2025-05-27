@@ -28,7 +28,7 @@ output "hello_world_invoke_arn" {
 }
 
 # give gateway invokers the lambda invoke policy
-resource "aws_lambda_permission" "apigw_lambda" {
+resource "aws_lambda_permission" "apigw_lambda_hello_world" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.hello_world.function_name

@@ -20,7 +20,7 @@ def insert_above_marker(filepath: str, marker: str, text: str):
         lines = file.readlines() 
     
     marker_index = find_marker(lines, marker)
-    lines.insert(marker_index, text)
+    lines.insert(marker_index, text + "\n")
     
     with open(filepath, "w") as file:
         file.writelines(lines)
@@ -30,8 +30,7 @@ def use_template(template_path: str, destination_path: str, lambda_name: str, ac
     with open(template_path, "r") as file:
         template = file.read()
         
-    template.replace("{lambda_name}", lambda_name)
-    template.replace("{action}", action)
+    template = template.replace("{name}", lambda_name).replace("{action}", action)
     
     with open(destination_path, "a" if do_append else "w") as file:
         file.write(template + "\n")
@@ -98,3 +97,5 @@ def main():
         "this is the invoke arn marker for the build tool",
         f"  {lambda_name}_invoke_arn = module.lambda.{lambda_name}_invoke_arn"
     )
+    
+main()
