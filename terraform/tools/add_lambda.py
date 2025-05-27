@@ -84,7 +84,7 @@ def main():
         do_append = True
     )
     use_template(
-        f"{TEMPLATES_DIR}/gateway_endpoint_url_declaration.template",
+        f"{TEMPLATES_DIR}/gateway_endpoint_url_output.template",
         f"{GATEWAY_DIR}/output.tf",
         lambda_name,
         action,
