@@ -1,0 +1,4 @@
+output "{name}_gateway_endpoint" {
+  description = "{action} request to this to call the {name} endpoint"
+  value       = module.gateway.api_gateway_{name}_endpoint_url
+}

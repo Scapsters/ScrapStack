@@ -11,7 +11,9 @@
 
 resource "aws_api_gateway_deployment" "deployment" {
   depends_on = [
-    aws_api_gateway_integration.hello_world_lambda_integration
+    aws_api_gateway_integration.hello_world_lambda_integration,
+
+    # this is the depends_on marker for the build tool
   ]
 
   rest_api_id = aws_api_gateway_rest_api.scrapstack.id

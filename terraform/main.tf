@@ -36,6 +36,8 @@ module "cloudwatch" {
 module "gateway" {
   source                 = "./modules/gateway"
   hello_world_invoke_arn = module.lambda.hello_world_invoke_arn
+
+  # this is the invoke arn marker for the build tool
   stage_name             = var.stage_name
   gateway_log_group      = module.cloudwatch.gateway_log_group_arn
   cloudwatch_role_arn    = module.cloudwatch.cloudwatch_role_arn
