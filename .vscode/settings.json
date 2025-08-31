@@ -1,6 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./api/source",
-        "./api/model"
+        "./api/lib",
+        "./api/source"
     ]
 }

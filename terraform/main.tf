@@ -4,12 +4,19 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    mongodbatlas = {
+      
+    }
   }
 }
 
-# Configure the AWS Provider
 provider "aws" {
   region = "us-east-1"
+}
+
+provider "mongodbatlas" {
+  public_key = var.mongodbatlas_public_key
+  private_key = var.mongodbatlas_private_key
 }
 
 module "s3-react" {
@@ -35,7 +42,7 @@ module "cloudwatch" {
 
 module "gateway" {
   source                 = "./modules/gateway"
-  hello_world_invoke_arn = module.lambda.hello_world_invoke_arn
+  api_endpoint_invoke_arn         = module.lambda.api_invoke_arn
   stage_name             = var.stage_name
   gateway_log_group      = module.cloudwatch.gateway_log_group_arn
   cloudwatch_role_arn    = module.cloudwatch.cloudwatch_role_arn
@@ -44,4 +51,13 @@ module "gateway" {
 module "lambda" {
   source                    = "./modules/lambda"
   api_gateway_execution_arn = module.gateway.api_gateway_execution_arn
+  documentdb_endpoint = module.database.documentdb_cluster_endpoint
+  documentdb_username = var.documentdb_username
+  documentdb_password = var.documentdb_password
+}
+
+module "database" {
+  source = "./modules/database"
+  username = var.documentdb_username
+  password = var.documentdb_password
 }

@@ -1,17 +1,13 @@
 #
-# These should be gateway globals. Only small changes needed here. To make a new endpoint you want hello_world.tf
+# Gateway globals
 #
 
 # largely created using https://spacelift.io/blog/terraform-api-gateway as reference
 # please refer to this for any questions that aren't answered in comments in the code
 
-#
-# Add to depends on when adding new functions
-#
-
 resource "aws_api_gateway_deployment" "deployment" {
   depends_on = [
-    aws_api_gateway_integration.hello_world_lambda_integration
+    aws_api_gateway_integration.api_endpoint_lambda_integration
   ]
 
   rest_api_id = aws_api_gateway_rest_api.scrapstack.id

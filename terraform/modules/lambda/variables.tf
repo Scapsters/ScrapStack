@@ -3,8 +3,12 @@ variable "api_gateway_execution_arn" {
   type        = string
 }
 
-variable "python_runtime" {
-  description = "The runtime of python"
+variable "node_runtime" {
+  description = "The runtime of node"
   type        = string
-  default     = "python3.9"
+  default     = "nodejs22.x"
+}
+
+variable "db_endpoint" {
+  type = string
 }

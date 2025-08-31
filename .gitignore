@@ -5,3 +5,6 @@ terraform/.terraform/*
 dev_variables.tfvars
 *.pyc
 /api/dist
+**/secret_values.tfvars
+aws/**/*
+.venv/**/*
