@@ -1,14 +1,17 @@
 variable "api_gateway_execution_arn" {
-  description = "The execution arn of the API Gateway"
-  type        = string
+  type = string
 }
 
 variable "node_runtime" {
-  description = "The runtime of node"
-  type        = string
-  default     = "nodejs22.x"
+  default = "nodejs22.x"
 }
 
-variable "db_endpoint" {
+variable "db_username" {
   type = string
+  sensitive = true  
+}
+
+variable "db_password" {
+  type = string
+  sensitive = true  
 }

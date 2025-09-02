@@ -5,23 +5,13 @@ terraform {
       version = "~> 5.0"
     }
     mongodbatlas = {
-      
+      source = "mongodb/mongodbatlas"
     }
   }
 }
 
 provider "aws" {
   region = "us-east-1"
-}
-
-provider "mongodbatlas" {
-  public_key = var.mongodbatlas_public_key
-  private_key = var.mongodbatlas_private_key
-}
-
-module "s3-react" {
-  source      = "./modules/s3-web"
-  bucket_name = var.bucket_name
 }
 
 # commented out because cloudfront takes a very long time to create & destroy due to DNS registration on aws's side
@@ -32,13 +22,14 @@ module "s3-react" {
 #     bucket_regional_domain_name = module.s3-react.bucket_domain_name
 # }
 
+module "s3-react" {
+  source      = "./modules/s3-web"
+  bucket_name = var.bucket_name
+}
+
 module "cloudwatch" {
   source = "./modules/cloudwatch"
 }
-
-#
-# Add here when adding new functions. Then, use it in gateway/gateway.tf
-#
 
 module "gateway" {
   source                 = "./modules/gateway"
@@ -51,13 +42,6 @@ module "gateway" {
 module "lambda" {
   source                    = "./modules/lambda"
   api_gateway_execution_arn = module.gateway.api_gateway_execution_arn
-  documentdb_endpoint = module.database.documentdb_cluster_endpoint
-  documentdb_username = var.documentdb_username
-  documentdb_password = var.documentdb_password
-}
-
-module "database" {
-  source = "./modules/database"
-  username = var.documentdb_username
-  password = var.documentdb_password
+  db_username = var.db_username
+  db_password = var.db_password
 }

@@ -1,9 +1,13 @@
-output "api_endpoint" {
-  description = "API endpoint"
-  value       = module.gateway.api_gateway_hello_world_endpoint_url
+output "client-url" {
+  description = "The domain name of the CloudFront distribution"
+  value       = module.s3-react
 }
 
-output "documentdb_cluster_endpoint" {
-  description = "DocumentDB cluster endpoint"
-  value = module.database.documentdb_cluster_endpoint
+output "api_gateway_endpoint_url" {
+  value = module.gateway.api_gateway_endpoint_url
+}
+
+output "lambda_role_arn" {
+  description = "MongoDB wants this to allow the lambda to be authorized to connect"
+  value = module.lambda.lambda_role_arn
 }

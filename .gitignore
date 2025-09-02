@@ -8,3 +8,4 @@ dev_variables.tfvars
 **/secret_values.tfvars
 aws/**/*
 .venv/**/*
+**/node_modules/**/*

@@ -1,7 +1,3 @@
-#
-# Add an invoke arn for every function, and then reference it in main.tf
-#
-
 variable "api_endpoint_invoke_arn" {
   description = "The invoke arn for the API lambda"
   type        = string

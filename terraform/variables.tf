@@ -8,12 +8,12 @@ variable "stage_name" {
   type        = string
 }
 
-variable "mongodbatlas_public_key" {
-  type        = string
-  sensitive   = true
+variable "db_username" {
+  type = string
+  sensitive = true  
 }
 
-variable "mongodbatlas_private_key" {
-  type        = string
-  sensitive   = true
+variable "db_password" {
+  type = string
+  sensitive = true  
 }
