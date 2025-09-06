@@ -21,6 +21,7 @@
     "typescript": "^5.9.2"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
     "@types/mongodb": "^4.0.7",
     "@types/node": "^24.3.0",
     "esbuild": "^0.25.9",

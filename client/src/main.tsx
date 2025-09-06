@@ -1,10 +1,23 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { ViteReactSSG, type RouteRecord } from 'vite-react-ssg'
+import { Tweets } from './Tweets.tsx'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const routes: RouteRecord[] = [
+  {
+    path: '/',
+    element: <StrictMode><App /></StrictMode>,
+    children: [
+      {
+        path: '/scappy11',
+        element: <Tweets user="scappy11" />
+      }, {
+        path: '/jungchoi01',
+        element: <Tweets user="jungchoi01" />
+      }
+    ],
+  },
+]
+
+export const createRoot = ViteReactSSG({ routes })

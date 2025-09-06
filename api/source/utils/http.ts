@@ -1,16 +1,12 @@
-export function makeResponse(body: object | string, code: number = 200) {
-    return {
-        statusCode: code,
-        body: JSON.stringify(body),
-    }
-}
+import { TRPCError } from "@trpc/server"
+import { APIGatewayProxyEventV2 } from "aws-lambda"
 
-export function makeGenericError(e: unknown, code: number = 500) {
-    return makeResponse( 
-        `Unexpected Error caught in Lambda.
-        \nType: ${(e as Error).name}
-        \nMessage: ${(e as Error).message}
-        \nStack Trace: ${(e as Error).stack}`,
-        code
-    )
+export function getFromHeaders(header: string, { event }: { event: APIGatewayProxyEventV2 }) {
+    const uuid = event.headers.user_uuid
+    if (!uuid)
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'User identifier missing.',
+        })
+    return uuid
 }

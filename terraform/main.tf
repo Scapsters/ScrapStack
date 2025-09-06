@@ -8,6 +8,12 @@ terraform {
       source = "mongodb/mongodbatlas"
     }
   }
+  backend "s3" {
+    bucket  = "scapsters-scrapstack-terraform-state"
+    key     = "terraform.tfstate"
+    region  = "us-east-1"
+    encrypt = true
+  }
 }
 
 provider "aws" {
@@ -27,21 +33,12 @@ module "s3-react" {
   bucket_name = var.bucket_name
 }
 
-module "cloudwatch" {
-  source = "./modules/cloudwatch"
-}
-
-module "gateway" {
-  source                 = "./modules/gateway"
-  api_endpoint_invoke_arn         = module.lambda.api_invoke_arn
-  stage_name             = var.stage_name
-  gateway_log_group      = module.cloudwatch.gateway_log_group_arn
-  cloudwatch_role_arn    = module.cloudwatch.cloudwatch_role_arn
-}
-
 module "lambda" {
   source                    = "./modules/lambda"
-  api_gateway_execution_arn = module.gateway.api_gateway_execution_arn
-  db_username = var.db_username
-  db_password = var.db_password
+  db_username               = var.db_username
+  db_password               = var.db_password
+}
+
+resource "aws_s3_bucket" "scapsters-scrapstack-terraform-state" {
+  bucket = "scapsters-scrapstack-terraform-state"
 }

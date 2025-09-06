@@ -1,13 +1,9 @@
-output "client-url" {
+output "cloudfront-url" {
   description = "The domain name of the CloudFront distribution"
-  value       = module.s3-react
+  value       = module.s3-react.bucket_domain_name
+  sensitive   = true
 }
 
-output "api_gateway_endpoint_url" {
-  value = module.gateway.api_gateway_endpoint_url
-}
-
-output "lambda_role_arn" {
-  description = "MongoDB wants this to allow the lambda to be authorized to connect"
-  value = module.lambda.lambda_role_arn
+output "lambda_url" {
+  value = module.lambda.lambda_url
 }

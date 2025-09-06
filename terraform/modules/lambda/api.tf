@@ -21,11 +21,40 @@ data "archive_file" "api_lambda_zip" {
   output_path = "../api/dist/out.zip"
 }
 
-# give gateway invokers the lambda invoke policy
-resource "aws_lambda_permission" "apigw_lambda" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.api.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${var.api_gateway_execution_arn}/*/*"
+resource "aws_lambda_function_url" "api_url" {
+  function_name      = aws_lambda_function.api.function_name
+  authorization_type = "NONE"
+
+  cors {
+    allow_credentials = true
+    allow_origins = [
+      "http://localhost:5173",
+      "https://scrapstack.net",
+      "https://www.scrapstack.net",
+      "https://furryslop.com",
+      "https://www.furryslop.com"
+    ]
+    allow_methods = ["*"]
+    allow_headers = [
+      "content-type",         # Allows Content-Type header
+      "authorization",        # For auth tokens
+      "x-api-key",            # For API keys
+      "x-amz-date",           # AWS signature headers
+      "x-amz-security-token", # AWS signature headers
+      "x-requested-with",     # Common AJAX header
+      "accept",               # Accept header
+      "origin"                # Origin header
+    ]
+  }
+
+
+}
+
+# Resource-based policy for public access
+resource "aws_lambda_permission" "allow_public_access" {
+  statement_id           = "FunctionURLAllowPublicAccess"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.api.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
 }

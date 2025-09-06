@@ -1,37 +1,44 @@
-import { Db, Collection } from 'mongodb'
-import { AWSError, ConfigNotSetError } from './utils/errors'
-import { dbClient } from './db'
-import { makeGenericError, makeResponse } from './utils/http'
-import { Meow } from './router'
+import { initTRPC } from '@trpc/server'
+import { getDBClient } from './db'
+import { awsLambdaRequestHandler, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda'
+import type { APIGatewayProxyEventV2 } from 'aws-lambda'
+import { TweetSchema, UserSchema, zTweetSchema } from './schemas'
+import z from 'zod'
+import { getFromHeaders } from './utils/http'
+import { getSessionUser } from './utils/user'
 
+const t = initTRPC.context<Awaited<ReturnType<typeof createContext>>>().create()
+const publicProcedure = t.procedure
 
+const router = t.router({
+    createUser: publicProcedure.query(async ({ ctx }) => {
+        return (await ctx.User.insertOne({ uuid: getFromHeaders('user_uuid', ctx), viewedPosts: [] })).acknowledged
+    }),
+    deleteUser: publicProcedure.query(async ({ ctx }) => {
+        return (await ctx.User.deleteOne({ uuid: getFromHeaders('user_uuid', ctx) })).acknowledged
+    }),
 
-// Handler
-export async function handle_request(event: any, context: any): Promise<any> {
-    try {
-        const db: Db = dbClient.db('test')
-        const collection: Collection<Meow> = db.collection<Meow>('test')
+    getRandomUnviewedTweets: publicProcedure.query(async ({ ctx }) => {
+        return ctx.Tweet.find({ statusId: { $nin: (await getSessionUser(ctx)).viewedPosts } })
+    }),
+    markTweetsAsViewed: publicProcedure.input(z.array(zTweetSchema)).query(async ({ input, ctx }) => {
+        return ctx.User.updateOne(await getSessionUser(ctx), { $push: { viewedPosts: { $each: input.map(tweet => tweet.statusId) } } })
+    }),
+})
 
-        const inserted = await collection.insertOne({ name: 'meowwww', value: 4 })
-        const result = await collection.findOne({ name: 'meowwww', value: 4 })
-
-        if (!result)
-            throw new Error('Document not found')
-
-        return makeResponse({
-            message: 'Successfully connected to DocumentDB',
-            server_info: await dbClient.db().admin().serverInfo(),
-            test_operation: {
-                inserted_id: inserted.insertedId.toHexString(),
-                result_id: result._id?.toHexString(),
-                document: result,
-            },
-        })
-    } catch (e) {
-        if (e instanceof ConfigNotSetError)
-            return makeResponse(e.message, 400)
-        if (e instanceof AWSError)
-            return makeResponse(`AWS Error encountered: ${e.message}`)
-        return makeGenericError(e)
+const createContext = async (opts: CreateAWSLambdaContextOptions<APIGatewayProxyEventV2>) => {
+    const dbClient = await getDBClient()
+    return {
+        ...opts,
+        dbClient: dbClient,
+        User: dbClient.db('Scrapstack').collection<UserSchema>('user'),
+        Tweet: dbClient.db('Scrapstack').collection<TweetSchema>('tweet'),
     }
 }
+
+export const handle_request = awsLambdaRequestHandler({
+    router,
+    createContext,
+})
+
+export type AppRouter = typeof router

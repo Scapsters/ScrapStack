@@ -18,5 +18,5 @@ variable "website_error_document" {
 variable "website_files_path" {
   description = "The local path to the website files"
   type        = string
-  default = "../client/build"
+  default     = "../client/build"
 }

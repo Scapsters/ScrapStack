@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@theme {
+  --color-accent      : #FFA62B;
+  --color-accent-dark : #e0432a;
+  --color-white       : #EDE7E3;
+  --color-primaryLight: #82C0CC;
+  --color-primary     : #489FB5;
+  --color-primaryDark : #16697A;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -7,7 +16,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: var(--color-white);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,15 +24,3 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
