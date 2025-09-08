@@ -26,7 +26,7 @@ async function getSecretValues() {
 export async function getDBClient(): Promise<MongoClient> {
     if (dbClientCache) return dbClientCache
 
-    if (!dbCredentialsCache) dbCredentialsCache = await getSecretValues()
+    dbCredentialsCache ??= await getSecretValues()
 
     console.log('Connecting to Mongo...')
     const mongoUri = `mongodb+srv://${dbCredentialsCache.dbUsername}:${dbCredentialsCache.dbPassword}@scrapstack.skqrl5l.mongodb.net/?retryWrites=true&w=majority&appName=Scrapstack`

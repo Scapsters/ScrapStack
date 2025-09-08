@@ -3,20 +3,24 @@
 @theme {
   --color-accent      : #FFA62B;
   --color-accent-dark : #e0432a;
-  --color-white       : #EDE7E3;
+  --color-light       : #EDE7E3;
   --color-primaryLight: #82C0CC;
   --color-primary     : #489FB5;
   --color-primaryDark : #16697A;
+  --color-dark        : #121212;
+  --color-extra-dark  : #060606;
 }
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: Lexend, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-optical-sizing: auto;
   font-weight: 400;
+  font-style: normal;
+
+  line-height: 1.5;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: var(--color-white);
+  background-color: var(--color-light);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,3 +28,47 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.brand {
+  @apply text-transparent w-fit h-fit bg-linear-to-tr from-primaryLight from-20% to-purple-400 leading-20;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.square {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+
+}
+
+.square::before {
+  image-rendering: auto;
+  content: "";
+  position: absolute;
+  inset: -50%;             /* oversize tile to cover rotation gaps */
+  background-image:
+    linear-gradient(to right, #EDE7E330 1px, transparent 1px),
+    linear-gradient(to bottom, #ede7e330 1px, transparent 1px);
+  background-size: 110.1px 110.1px;
+  transform: rotate(-5deg);
+  z-index: -1;
+  animation: scroll 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scroll {
+  from { background-position: 0 0; }
+  to   { background-position: 110.1px 110.1px; }
+}
+
+h1 {
+  @apply text-2xl font-bold mt-15 text-primary
+}
+
+ul {
+  @apply list-disc
+}
+
+li {
+  @apply ml-10 mt-1
+}

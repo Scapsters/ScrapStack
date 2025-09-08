@@ -1,7 +1,7 @@
-import { APIGatewayProxyEventV2 } from "aws-lambda"
+import type { APIGatewayProxyEventV2 } from "aws-lambda"
 import { getFromHeaders } from "./http"
 import { Collection } from "mongodb"
-import { UserSchema } from "../schemas"
+import type { UserSchema } from "../schemas"
 import { TRPCError } from "@trpc/server"
 
 export async function getSessionUser({ event, User }: { event: APIGatewayProxyEventV2, User: Collection<UserSchema> }) {
