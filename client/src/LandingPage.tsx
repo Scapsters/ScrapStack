@@ -120,7 +120,7 @@ export function LandingPage() {
                     </p>
                     <p className="font-bold mt-15 text-primaryDark">What precautions do we take?</p>
                     <ul>
-                        <li className="mt-5!">We send you the script that will gather your liked posts, so that you can run it locally.</li>
+                        <li className="mt-5!">We send you the script that will gather your liked posts, so that you can run it locally. That means we won't ever see your cookies.</li>
                         <li className="mt-5!">The script is so small that we can review it with you, and even have an AI check it for safety.</li>
                     </ul>
                     <p className="mt-10 font-bold">
