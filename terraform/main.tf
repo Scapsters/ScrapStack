@@ -7,6 +7,10 @@ terraform {
     mongodbatlas = {
       source = "mongodb/mongodbatlas"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5"
+    }
   }
   backend "s3" {
     bucket  = "scapsters-scrapstack-terraform-state"
@@ -19,6 +23,11 @@ terraform {
 provider "aws" {
   region = "us-east-1"
 }
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}
+
 
 # commented out because cloudfront takes a very long time to create & destroy due to DNS registration on aws's side
 # i recommend commenting this out for development whenever you need to touch the terraform configuration
@@ -37,6 +46,7 @@ module "lambda" {
   source                    = "./modules/lambda"
   db_username               = var.db_username
   db_password               = var.db_password
+  admin_secret = var.admin_secret
 }
 
 resource "aws_s3_bucket" "scapsters-scrapstack-terraform-state" {
