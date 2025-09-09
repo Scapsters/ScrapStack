@@ -1,8 +1,10 @@
 import { StrictMode } from 'react'
 import './index.css'
 import App from './App.tsx'
-import { ViteReactSSG, type RouteRecord } from 'vite-react-ssg'
+import { ClientOnly, ViteReactSSG, type RouteRecord } from 'vite-react-ssg'
 import { Tweets } from './Tweets.tsx'
+import StackSearch from './StackSearch.tsx'
+import { LandingPage, TopBar } from './LandingPage.tsx'
 
 const routes: RouteRecord[] = [
   {
@@ -10,13 +12,18 @@ const routes: RouteRecord[] = [
     element: <StrictMode><App /></StrictMode>,
     children: [
       {
-        path: '/scappy11',
-        element: <Tweets user="scappy11" />
-      }, {
-        path: '/jungchoi01',
-        element: <Tweets user="jungchoi01" />
+        index: true,
+        element: <><TopBar /><LandingPage /></>
+      },
+      {
+        path: 'search',
+        element: <><StackSearch /></>
+      },
+      {
+        path: 'stacks/:u',
+        element: <><ClientOnly>{ () => <Tweets />}</ClientOnly></>,
       }
-    ],
+    ]
   },
 ]
 

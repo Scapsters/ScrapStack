@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server"
-import { APIGatewayProxyEventV2 } from "aws-lambda"
+import type { APIGatewayProxyEventV2 } from "aws-lambda"
 
 export function getFromHeaders(header: string, { event }: { event: APIGatewayProxyEventV2 }) {
-    const uuid = event.headers.user_uuid
+    const uuid = event.headers[header]
     if (!uuid)
         throw new TRPCError({
             code: 'BAD_REQUEST',
