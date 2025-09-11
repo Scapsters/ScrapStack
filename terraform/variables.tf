@@ -17,3 +17,22 @@ variable "db_password" {
   type = string
   sensitive = true  
 }
+
+variable "admin_secret" {
+  description = "SHA256 hash of admin password"
+  type = string
+  sensitive = true
+}
+
+variable "cloudflare_api_token" {
+  type = string
+}
+
+variable "api_documentation_site_path" {
+  description = "path to api documentation dist"
+  type = string
+}
+
+variable "cloudflare_account_id" {
+  type = string
+}

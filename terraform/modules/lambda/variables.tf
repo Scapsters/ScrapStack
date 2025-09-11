@@ -11,3 +11,8 @@ variable "db_password" {
   type      = string
   sensitive = true
 }
+
+variable "admin_secret" {
+  type = string
+  sensitive = true
+}

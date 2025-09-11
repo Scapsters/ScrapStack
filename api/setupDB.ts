@@ -1,6 +1,9 @@
 import { getDBClient } from "./source/db"
+import { StackDB, TweetDB, UserDB } from "./source/schemas"
 
 const db = await getDBClient()
-db.db("Scrapstack").collection("user")
-db.db("Scrapstack").collection("tweet")
-db.db("Scrapstack").collection("stack")
+const user = db.db("Scrapstack").collection<UserDB>("user")
+const tweet = db.db("Scrapstack").collection<TweetDB>("tweet")
+const stack = db.db("Scrapstack").collection<StackDB>("stack")
+
+tweet.createIndex( { stackId: 1 } )
