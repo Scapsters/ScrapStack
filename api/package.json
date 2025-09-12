@@ -18,7 +18,7 @@
     "@orpc/server": "^1.8.8",
     "@trpc/client": "^11.5.0",
     "@trpc/server": "^11.5.0",
-    "aws-lambda": "^1.0.7",
+    "@types/aws-lambda": "^8.10.145",
     "dotenv": "^17.2.1",
     "esbuild": "^0.25.9",
     "mongodb": "^6.19.0",
@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",
-    "@types/mongodb": "^4.0.7",
     "@types/node": "^24.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",

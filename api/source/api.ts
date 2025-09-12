@@ -1,5 +1,4 @@
 import { os } from '@orpc/server'
-import { type APIGatewayProxyEventV2 } from 'aws-lambda'
 import { Collection, type Filter, ObjectId } from 'mongodb'
 import { createHash } from 'node:crypto'
 import z from 'zod'
@@ -8,81 +7,88 @@ import { type StackSchema, type TweetSchema, type UserSchema, zStackSchema, zTwe
 import { getFromHeaders } from './utils/http.js'
 import { ORPCError } from '@orpc/server'
 import { RPCHandler as AWSRPCHandler } from '@orpc/server/aws-lambda'
+// @ts-ignore
+import type { Context, APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda'
 
-const base = os.$context<Awaited<ReturnType<typeof createContext>>>()
+const base = os.$context()
 
 async function queryRandomTweets(Tweet: Collection<TweetSchema>, filter: Filter<TweetSchema>) {
 	const tweetIds = await Tweet.find(filter).project<{ _id: ObjectId }>({ _id: 1 }).toArray()
 	const ids = tweetIds.map(t => t._id)
-	// sample up to 20 unique ids
 	const sampledIds: ObjectId[] = []
-	const max = Math.min(20, ids.length)
-	for (let i = 0; i < max; i++) {
-		const idx = Math.floor(Math.random() * ids.length)
-		sampledIds.push(ids.splice(idx, 1)[0])
+	for (let i = 0; i < Math.min(20, ids.length); i++) { // No more than 20
+		const index = Math.floor(Math.random() * ids.length)
+		sampledIds.push(ids.splice(index, 1)[0]) // Remove as we sample
 	}
 	return await Tweet.find({ _id: { $in: sampledIds } }).toArray()
 }
 
-const attachDB = base.middleware(async ({ context, next }) => {
-	const dbClient = await getDBClient()
-	const User = dbClient.db('Scrapstack').collection<UserSchema>('user')
-	const Tweet = dbClient.db('Scrapstack').collection<TweetSchema>('tweet')
-	const Stack = dbClient.db('Scrapstack').collection<StackSchema>('stack')
-	return next({ context: { dbClient, User, Tweet, Stack }})
-})
+const requireUser = base.use(
+	base.middleware<{ user: UserSchema, userToken: string }, unknown>(async ({ context: { User, event }, next }) => {
+		const userToken = getFromHeaders('userToken', event)
+		if (!User) throw new ORPCError('INTERNAL', 'DB not attached')
+		let user = await User.findOne({ userToken })
+		if (!user) {
+			const res = await User.insertOne({ userToken, viewedPosts: [] })
+			if (!res.acknowledged) throw new ORPCError('INTERNAL', 'JIT user creation not acknowledged')
+			user = await User.findOne({ userToken })
+			if (!user) throw new ORPCError('INTERNAL', 'JIT created but not found')
+		}
+		return next({ context: { user, userToken } })
+	})
+)
 
-const requireUser = base.middleware(async ({ context, next }) => {
-	const token = getFromHeaders('userToken', context)
-	if (!context.User) throw new ORPCError('INTERNAL', 'DB not attached')
-	let user = await context.User.findOne({ identifier: token })
-	if (!user) {
-		const res = await context.User.insertOne({ identifier: token, viewedPosts: [] })
-		if (!res.acknowledged) throw new ORPCError('INTERNAL', 'JIT user creation not acknowledged')
-		user = await context.User.findOne({ identifier: token })
-		if (!user) throw new ORPCError('INTERNAL', 'JIT created but not found')
-	}
-	return next({ context: { user, userToken: token }})
-})
+const requireTheseNuts = base.middleware(async ({ context: { User, event }, next }) => {
+		const userToken = getFromHeaders('userToken', event)
+		if (!User) throw new ORPCError('INTERNAL', 'DB not attached')
+		let user = await User.findOne({ userToken })
+		if (!user) {
+			const res = await User.insertOne({ userToken, viewedPosts: [] })
+			if (!res.acknowledged) throw new ORPCError('INTERNAL', 'JIT user creation not acknowledged')
+			user = await User.findOne({ userToken })
+			if (!user) throw new ORPCError('INTERNAL', 'JIT created but not found')
+		}
+		return next({ context: { user, userToken } })
+	})
 
-const requireAdmin = base.middleware(async ({ context, next }) => {
-	const authHeader = getFromHeaders('authorization', context) || ''
-	const adminPassword = authHeader.split(' ')[1]
-	if (!adminPassword) throw new ORPCError('UNAUTHORIZED', 'Missing admin bearer')
-	const adminAnswer = await getSecretString('ADMIN_ANSWER')
-	const isAdmin = createHash('sha256').update(adminPassword).digest('hex') === adminAnswer
-	if (!isAdmin) throw new ORPCError('UNAUTHORIZED', 'Invalid admin token')
-	context.isAdmin = true
-	return next()
-})
+const requireAdmin = base.use(
+	base.middleware(async ({ context: { event }, next }) => {
+		const authHeader = getFromHeaders('authorization', event) || ''
+		const adminPassword = authHeader.split(' ')[1]
+		if (!adminPassword) throw new ORPCError('UNAUTHORIZED', 'Missing admin bearer')
+		const adminAnswer = await getSecretString('ADMIN_ANSWER')
+		const isAdmin = createHash('sha256').update(adminPassword).digest('hex') === adminAnswer
+		if (!isAdmin) throw new ORPCError('UNAUTHORIZED', 'Invalid admin token')
+		return next({ context: { isAdmin: true } })
+	})
+)
 
 export const router = {
-	deleteUser: base
-		.use(requireUser)
-		.handler(async ({ context }) => {
-			return (await context.User.deleteOne(context.user)).acknowledged
+	// Users
+	deleteUser: base.use(requireTheseNuts)
+		.handler(async ({ context: { User, user } }) => {
+			return (await User.deleteOne(user)).acknowledged
 		}),
-	markTweet: base
-		.use(requireUser)
+
+	// Tweets
+	markTweet: requireUser
 		.input(z.array(zTweetSchema))
-		.handler(async ({ input, context }) => {
-			return (await context.User.updateOne(
-				context.user,
-				{ $push: { viewedPosts: { $each: input.map(t => t.statusId) } } }
+		.handler(async ({ input, context: { User, user } }) => {
+			return (await User.updateOne(
+				user, { $push: { viewedPosts: { $each: input.map(t => t.statusId) } } }
 			)).acknowledged
 		}),
 	getRandomTweets: base
 		.input(zTweetSchema.pick({ stackId: true }))
-		.handler(async ({ input, context }) => {
-			return await queryRandomTweets(context.Tweet, { stackId: input.stackId })
+		.handler(async ({ input, context: { Tweet } }) => {
+			return await queryRandomTweets(Tweet, { stackId: input.stackId })
 		}),
-	getRandomUnviewedTweets: base
-		.use(requireUser)
+	getRandomUnviewedTweets: requireUser
 		.input(zTweetSchema.pick({ stackId: true }))
-		.handler(async ({ input, context }) => {
-			return await queryRandomTweets(context.Tweet, {
+		.handler(async ({ input, context: { Tweet, user } }) => {
+			return await queryRandomTweets(Tweet, {
 				stackId: input.stackId,
-				statusId: { $nin: context.user.viewedPosts },
+				statusId: { $nin: user.viewedPosts },
 			})
 		}),
 	getTweets: base
@@ -93,8 +99,8 @@ export const router = {
 			pageSize: z.number()
 		}))
 		.output(z.array(z.object({ metadata: z.number(), data: z.array(zTweetSchema) })))
-		.handler(async ({ input, context }) => {
-			return await context.Tweet.aggregate([
+		.handler(async ({ input, context: { Tweet } }) => {
+			return await Tweet.aggregate([
 				{ $match: input.tweetFilter },
 				{ $sort: input.tweetSorter },
 				{
@@ -105,43 +111,45 @@ export const router = {
 				}
 			]).toArray()
 		}),
-	createTweets: base
-		.use(requireAdmin)
+	createTweets: requireAdmin
 		.input(z.array(zTweetSchema))
 		.output(z.boolean())
-		.handler(async ({ input, context }) => {
-			return (await context.Tweet.insertMany(input)).acknowledged
+		.handler(async ({ input, context: { Tweet } }) => {
+			return (await Tweet.insertMany(input)).acknowledged
 		}),
+
+	// Stacks
 	getStacks: base
 		.input(zStackSchema.partial())
 		.output(z.array(zStackSchema))
-		.handler(async ({ input, context }) => {
-			return await context.Stack.find(input).toArray()
+		.handler(async ({ input, context: { Stack } }) => {
+			return await Stack.find(input).toArray()
 		}),
-	createStack: base
-		.use(requireAdmin)
+	createStack: requireAdmin
 		.input(zStackSchema.pick({ twitterHandle: true }))
 		.output(z.boolean())
-		.handler(async ({ input, context }) => {
-			return (await context.Stack.insertOne({ postCount: 0, ...input })).acknowledged
+		.handler(async ({ input, context: { Stack } }) => {
+			return (await Stack.insertOne({ postCount: 0, ...input })).acknowledged
 		}),
-	deleteStack: base
-		.use(requireAdmin)
+	deleteStack: requireAdmin
 		.input(zStackSchema.pick({ twitterHandle: true }))
 		.output(z.boolean())
-		.handler(async ({ input, context }) => {
-			return (await context.Stack.deleteOne({ ...input })).acknowledged
+		.handler(async ({ input, context: { Stack } }) => {
+			return (await Stack.deleteOne({ ...input })).acknowledged
 		}),
 }
 
 const rpcHandler = new AWSRPCHandler(router)
 
-async function createContext(event, context) {
+async function createContext(
+	event: APIGatewayProxyEventV2,
+	context: Context
+) {
 	const dbClient = await getDBClient()
 
 	return {
-		...event,
-		...context,
+		event,
+		context,
 		dbClient,
 		User: dbClient.db('Scrapstack').collection<UserSchema>('user'),
 		Tweet: dbClient.db('Scrapstack').collection<TweetSchema>('tweet'),
@@ -149,22 +157,29 @@ async function createContext(event, context) {
 	}
 }
 
-export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
-  const { matched } = await rpcHandler.handle(event, responseStream, {
-    prefix: '/rpc',
-    context: createContext(event, context)
-  })
+export const handler = awslambda.streamifyResponse(async (
+	event: APIGatewayProxyEventV2, 
+	responseStream: any, 
+	context: Context
+) => {
+	const { matched } = await rpcHandler.handle(event, responseStream, {
+		prefix: '/rpc',
+		context: await createContext(event, context)
+	})
 
-  if (matched)
-    return
+	if (matched) return
 
-  awslambda.HttpResponseStream.from(responseStream, {
-    statusCode: 404,
-  })
-  responseStream.write('Not found')
-  responseStream.end()
+	awslambda.HttpResponseStream.from(responseStream, {
+		statusCode: 404,
+	})
+	responseStream.write('Not found')
+	responseStream.end()
 })
 
 
 
 export type AppRouter = typeof router
+
+const testRouter = {
+	
+}
