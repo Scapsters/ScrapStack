@@ -10,3 +10,4 @@ aws/**/*
 .venv/**/*
 **/node_modules/**/*
 api/out-tsc
+api/out
