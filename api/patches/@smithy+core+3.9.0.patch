@@ -1,0 +1,26 @@
+diff --git a/node_modules/@smithy/core/dist-types/submodules/cbor/cbor-types.d.ts b/node_modules/@smithy/core/dist-types/submodules/cbor/cbor-types.d.ts
+index 92cedfc..3efd839 100644
+--- a/node_modules/@smithy/core/dist-types/submodules/cbor/cbor-types.d.ts
++++ b/node_modules/@smithy/core/dist-types/submodules/cbor/cbor-types.d.ts
+@@ -37,7 +37,7 @@ export declare const extendedFloat16 = 25;
+ export declare const extendedFloat32 = 26;
+ export declare const extendedFloat64 = 27;
+ export declare const minorIndefinite = 31;
+-export declare function alloc(size: number): Uint8Array<ArrayBuffer> | Buffer<ArrayBuffer>;
++export declare function alloc(size: number): Uint8Array | Buffer;
+ /**
+  * @public
+  *
+diff --git a/node_modules/@smithy/core/dist-types/submodules/cbor/cbor.d.ts b/node_modules/@smithy/core/dist-types/submodules/cbor/cbor.d.ts
+index f01a3ae..7577213 100644
+--- a/node_modules/@smithy/core/dist-types/submodules/cbor/cbor.d.ts
++++ b/node_modules/@smithy/core/dist-types/submodules/cbor/cbor.d.ts
+@@ -10,7 +10,7 @@
+  */
+ export declare const cbor: {
+     deserialize(payload: Uint8Array): any;
+-    serialize(input: any): Uint8Array<ArrayBufferLike>;
++    serialize(input: any): Uint8Array;
+     /**
+      * @public
+      * @param size - byte length to allocate.

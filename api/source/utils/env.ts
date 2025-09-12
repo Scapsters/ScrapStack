@@ -1,5 +1,5 @@
 import { config } from "dotenv";
-import { ConfigNotSetError } from "./errors"
+import { ConfigNotSetError } from "./errors.js"
 
 config() // Load env variables
 export function getFromEnvironment(variableName: string): string {

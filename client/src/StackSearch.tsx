@@ -11,7 +11,7 @@ export default function StackSearch() {
 
     const mutation = useMutation(trpc.createStack.mutationOptions())
 
-    const { data: stacks, error } = useQuery(trpc.getStacks.queryOptions({ helo: "hi"}))
+    const { data: stacks, error } = useQuery(trpc.getStacks.queryOptions({}))
     const searchedStacks = useMemo(
         () => (
             (

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Scrapstack API Docs</title>
+    <link rel="stylesheet" type="text/css" href="swagger-ui.css" />
+</head>
+
+<body>
+    <div id="swagger-ui"></div>
+
+    <script src="swagger-ui-bundle.js"></script>
+    <script>
+        const ui = SwaggerUIBundle({
+            url: '/openapi.json',  // path to your JSON file
+            dom_id: '#swagger-ui',
+            deepLinking: true,
+            presets: [
+                SwaggerUIBundle.presets.apis,
+            ],
+            onComplete: () => {
+                document.querySelector('.topbar .link span').textContent = 'ScrapStack API';
+            },
+        })
+    </script>
+</body>
+
+</html>

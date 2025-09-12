@@ -1,0 +1,22 @@
+diff --git a/node_modules/openapi-trpc/dist/openapi-trpc.d.ts b/node_modules/openapi-trpc/dist/openapi-trpc.d.ts
+index 3996d3d..717c0f0 100644
+--- a/node_modules/openapi-trpc/dist/openapi-trpc.d.ts
++++ b/node_modules/openapi-trpc/dist/openapi-trpc.d.ts
+@@ -1,7 +1,7 @@
+ import { OpenAPIV3 } from 'openapi-types';
+ import { RootConfig } from '@trpc/server';
+ import { Router } from '@trpc/server';
+-import { RouterDef } from '@trpc/server';
++import { AnyRouterDef } from '@trpc/server';
+ 
+ declare const allowedOperationKeys: ("tags" | "summary" | "description" | "externalDocs" | "deprecated")[];
+ 
+@@ -18,7 +18,7 @@ export declare interface GenerateOpenAPIDocumentOptions<M extends OperationMeta>
+     processOperation?: (operation: OpenAPIV3.OperationObject, meta: M | undefined) => OpenAPIV3.OperationObject | void;
+ }
+ 
+-declare type MetaOf<R extends Router<any>> = R extends Router<RouterDef<infer D, any>> ? D extends RootConfig<infer C> ? C['meta'] : never : never;
++declare type MetaOf<R extends Router<any>> = R extends Router<AnyRouterDef<infer D, any>> ? D extends RootConfig<infer C> ? C['meta'] : never : never;
+ 
+ /**
+  * @public

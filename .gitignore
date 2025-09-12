@@ -9,3 +9,4 @@ dev_variables.tfvars
 aws/**/*
 .venv/**/*
 **/node_modules/**/*
+api/out-tsc

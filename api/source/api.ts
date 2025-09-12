@@ -1,17 +1,18 @@
 import { initTRPC, TRPCError } from '@trpc/server'
 import { awsLambdaRequestHandler, type CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda'
-import type { APIGatewayProxyEventV2 } from 'aws-lambda'
 import { Collection, type Filter, ObjectId } from 'mongodb'
 import { createHash } from 'node:crypto'
 import z from 'zod'
-import { getDBClient, getSecretString } from './db'
-import { type StackSchema, type TweetSchema, type UserSchema, zStackSchema, zTweetSchema } from './schemas'
-import { getFromHeaders } from './utils/http'
-import { OpenApiMeta } from 'trpc-to-openapi'
+import { getDBClient, getSecretString } from './db.js'
+import { type StackSchema, type TweetSchema, type UserSchema, zStackSchema, zTweetSchema } from './schemas.js'
+import { getFromHeaders } from './utils/http.js'
+import type { APIGatewayProxyEventV2, Context } from 'aws-lambda'
+//@ts-ignore
+import { OperationMeta } from 'openapi-trpc'
 
 //TODO: rate limiting with cloudflare
 const t = initTRPC
-	.meta<OpenApiMeta>()
+	.meta<OperationMeta>()
 	.context<Awaited<ReturnType<typeof createContext>>>()
 	.create()
 const publicProcedure = t.procedure
@@ -54,7 +55,7 @@ async function queryRandomTweets(Tweet: Collection<TweetSchema>, filter: Filter<
 	return await Tweet.find({ _id: { $in: sampledIds } }).toArray()
 }
 
-const router = t.router({
+export const router = t.router({
 	// User
 	deleteUser: isUserProcedure
 		.mutation(async ({ ctx }) => (await ctx.User.deleteOne(ctx.User)).acknowledged),
@@ -86,7 +87,7 @@ const router = t.router({
 	getTweets: publicProcedure
 		.input(z.object({
 			tweetFilter: zTweetSchema.or(z.record(zTweetSchema.keyof(), z.any())).describe("Accepts either a plain tweet filter or a mongodb filter object"),
-			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1))),
+			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1)).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)")),
 			page: z.number(),
 			pageSize: z.number()
 		}))
@@ -102,20 +103,6 @@ const router = t.router({
 					}
 				}
 			]).toArray() as any),
-	/*
-	Example to call this:
-	isAdminProcedure requires special admin password as your Bearer token
-	
-	you can make multiple trpc requests with one http request. This is done by listing the requests like
-	{ 0: {input data for first request}, 1: {input data for second...} }
-	even if you are making one request, you still must follow this format.
-
-	To determine what input data is, check the .input on the endpoint. It kinda sortof reads like english.
-	if youre confused, go to "searchStacks.tsx" and create a mock request to play around with types
-	
-	data is returned similarly to how it is inputted. formatted with 0: ..., 1: ...
-	Assuming you make a single successful request, it will look like { 0: { result: { data: {output data} } } }
-	*/
 	createTweets: isAdminProcedure
 		.input(z.array(zTweetSchema))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
@@ -153,10 +140,13 @@ const createContext = async (opts: CreateAWSLambdaContextOptions<APIGatewayProxy
 	}
 }
 
-export const handle_request = awsLambdaRequestHandler({
+const lambdaHandler = awsLambdaRequestHandler({
 	router,
 	createContext,
 })
 
-export type AppRouter = typeof router
+export const handle_request = (event: APIGatewayProxyEventV2, context: Context) => {
+	return lambdaHandler(event, context) 
+}
 
+export type AppRouter = typeof router

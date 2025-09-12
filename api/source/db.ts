@@ -1,6 +1,6 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager'
-import { getFromEnvironment } from './utils/env'
-import { AWSError } from './utils/errors'
+import { getFromEnvironment } from './utils/env.js'
+import { AWSError } from './utils/errors.js'
 import { MongoClient } from 'mongodb'
 
 let dbCredentialsCache: { dbUsername: string; dbPassword: string } | null = null

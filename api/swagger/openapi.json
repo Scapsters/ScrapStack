@@ -1,0 +1,616 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "HTTP-RPC",
+    "version": ""
+  },
+  "paths": {
+    "/deleteUser": {
+      "post": {
+        "tags": [],
+        "operationId": "deleteUser",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/markTweet": {
+      "post": {
+        "tags": [],
+        "operationId": "markTweet",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "stackId": {
+                      "type": "number"
+                    },
+                    "statusId": {
+                      "type": "number"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "order": {
+                      "type": "number"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "stackId",
+                    "statusId",
+                    "date",
+                    "order",
+                    "text",
+                    "displayName",
+                    "username"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getRandomTweets": {
+      "get": {
+        "tags": [],
+        "operationId": "getRandomTweets",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stackId": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "stackId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/getRandomUnviewedTweets": {
+      "get": {
+        "tags": [],
+        "operationId": "getRandomUnviewedTweets",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stackId": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "stackId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/getTweets": {
+      "get": {
+        "tags": [],
+        "operationId": "getTweets",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "metadata": {
+                                "type": "number"
+                              },
+                              "data": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "stackId": {
+                                      "type": "number"
+                                    },
+                                    "statusId": {
+                                      "type": "number"
+                                    },
+                                    "date": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    },
+                                    "order": {
+                                      "type": "number"
+                                    },
+                                    "text": {
+                                      "type": "string"
+                                    },
+                                    "displayName": {
+                                      "type": "string"
+                                    },
+                                    "username": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "stackId",
+                                    "statusId",
+                                    "date",
+                                    "order",
+                                    "text",
+                                    "displayName",
+                                    "username"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "metadata",
+                              "data"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "result"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tweetFilter": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "stackId": {
+                              "type": "number"
+                            },
+                            "statusId": {
+                              "type": "number"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "order": {
+                              "type": "number"
+                            },
+                            "text": {
+                              "type": "string"
+                            },
+                            "displayName": {
+                              "type": "string"
+                            },
+                            "username": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "stackId",
+                            "statusId",
+                            "date",
+                            "order",
+                            "text",
+                            "displayName",
+                            "username"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "propertyNames": {
+                            "enum": [
+                              "stackId",
+                              "statusId",
+                              "date",
+                              "order",
+                              "text",
+                              "displayName",
+                              "username"
+                            ]
+                          }
+                        }
+                      ],
+                      "description": "Accepts either a plain tweet filter or a mongodb filter object"
+                    },
+                    "tweetSorter": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number",
+                        "enum": [
+                          1,
+                          -1
+                        ]
+                      },
+                      "propertyNames": {
+                        "enum": [
+                          "stackId",
+                          "statusId",
+                          "date",
+                          "order",
+                          "text",
+                          "displayName",
+                          "username"
+                        ]
+                      }
+                    },
+                    "page": {
+                      "type": "number"
+                    },
+                    "pageSize": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "tweetFilter",
+                    "tweetSorter",
+                    "page",
+                    "pageSize"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/createTweets": {
+      "post": {
+        "tags": [],
+        "operationId": "createTweets",
+        "responses": {
+          "200": {
+            "description": "Whether the operation was acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "boolean",
+                          "description": "Whether the operation was acknowledged"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "result"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "stackId": {
+                      "type": "number"
+                    },
+                    "statusId": {
+                      "type": "number"
+                    },
+                    "date": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "order": {
+                      "type": "number"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "stackId",
+                    "statusId",
+                    "date",
+                    "order",
+                    "text",
+                    "displayName",
+                    "username"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getStacks": {
+      "get": {
+        "tags": [],
+        "operationId": "getStacks",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "twitterHandle": {
+                                "type": "string"
+                              },
+                              "postCount": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "twitterHandle",
+                              "postCount"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "result"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "twitterHandle": {
+                      "type": "string"
+                    },
+                    "postCount": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "/createStack": {
+      "post": {
+        "tags": [],
+        "operationId": "createStack",
+        "responses": {
+          "200": {
+            "description": "Whether the operation was acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "boolean",
+                          "description": "Whether the operation was acknowledged"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "result"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "twitterHandle": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "twitterHandle"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/deleteStack": {
+      "post": {
+        "tags": [],
+        "operationId": "deleteStack",
+        "responses": {
+          "200": {
+            "description": "Whether the operation was acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "boolean",
+                          "description": "Whether the operation was acknowledged"
+                        }
+                      },
+                      "required": [
+                        "data"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "result"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "twitterHandle": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "twitterHandle"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
