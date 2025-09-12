@@ -8,9 +8,18 @@ export const API_ROOT = 'https://7kmjvblyk7kqm2fyxkcvgcjvq40fsxxl.lambda-url.us-
 
 export const queryClient = new QueryClient()
 const trpcClient = createTRPCClient<AppRouter>({
-    links: [httpBatchLink({ url: API_ROOT })]
+    links: [
+        httpBatchLink({
+            url: API_ROOT,
+            headers: {
+                authorization: `Bearer ${
+                    (typeof sessionStorage != 'undefined' && sessionStorage.getItem('userToken2')) || ''
+                }`,
+            },
+        }),
+    ],
 })
 export const trpc = createTRPCOptionsProxy<AppRouter>({
     client: trpcClient,
-    queryClient
+    queryClient,
 })
