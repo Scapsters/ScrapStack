@@ -11,3 +11,5 @@ aws/**/*
 **/node_modules/**/*
 api/out-tsc
 api/out
+api/source/utils/http.ts
+api/out-dev

@@ -19,19 +19,28 @@ async function getDBCredentials() {
     if (dbCredentialsCache) return dbCredentialsCache
 
     console.log('Fetching DB credentials...')
-    const secretValue = JSON.parse(await getSecretString("DB_CREDENTIALS"))
-    console.log('Fetched DB credentials.')
-    
-    return {
-        dbUsername: secretValue.username as string,
-        dbPassword: secretValue.password as string,
+    const environment = getFromEnvironment("ENVIRONMENT")
+    if (environment == "local") {
+        dbCredentialsCache = {
+            dbUsername: getFromEnvironment("DB_USERNAME"),
+            dbPassword: getFromEnvironment("DB_PASSWORD"),
+        }
+    } else {
+        const secretValue = JSON.parse(await getSecretString("DB_CREDENTIALS"))
+        dbCredentialsCache = {
+            dbUsername: secretValue.username as string,
+            dbPassword: secretValue.password as string,
+        }
     }
+    console.log('Fetched DB credentials.')
+    return dbCredentialsCache
 }
 
 export async function getDBClient(): Promise<MongoClient> {
     if (dbClientCache) return dbClientCache
 
     dbCredentialsCache ??= await getDBCredentials()
+    console.log(dbCredentialsCache)
 
     console.log('Connecting to Mongo...')
     const mongoUri = `mongodb+srv://${dbCredentialsCache.dbUsername}:${dbCredentialsCache.dbPassword}@scrapstack.skqrl5l.mongodb.net/?retryWrites=true&w=majority&appName=Scrapstack`

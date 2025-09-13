@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "VITE_API_URL=https://localhost:3003 vite-react-ssg dev",
-    "dev-with-real-lambda": "VITE_API_URL=https://7kmjvblyk7kqm2fyxkcvgcjvq40fsxxl.lambda-url.us-east-1.on.aws/ vite-react-ssg dev",
+    "dev": "VITE_API_URL=http://localhost:3003 vite-react-ssg dev",
+    "dev-with-real-lambda": "VITE_API_URL=http://7kmjvblyk7kqm2fyxkcvgcjvq40fsxxl.lambda-url.us-east-1.on.aws/ vite-react-ssg dev",
     "build": "VITE_API_URL=https://7kmjvblyk7kqm2fyxkcvgcjvq40fsxxl.lambda-url.us-east-1.on.aws/ tsc -b && vite-react-ssg build --mode production",
     "lint": "eslint .",
     "preview": "vite preview"

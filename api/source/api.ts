@@ -6,6 +6,7 @@ import z from 'zod'
 import { getDBClient, getSecretString } from './db.js'
 import { type StackSchema, type TweetSchema, type UserSchema, zStackSchema, zTweetSchema } from './schemas.js'
 import { getFromHeaders } from './utils/http.js'
+//@ts-ignore
 import type { APIGatewayProxyEventV2, Context } from 'aws-lambda'
 //@ts-ignore
 import { OperationMeta } from 'openapi-trpc'
@@ -59,7 +60,6 @@ export const router = t.router({
 	// User
 	deleteUser: isUserProcedure
 		.mutation(async ({ ctx }) => (await ctx.User.deleteOne(ctx.User)).acknowledged),
-
 	markTweet: isUserProcedure
 		.input(z.array(zTweetSchema))
 		.mutation(async ({ input, ctx }) =>
@@ -74,7 +74,6 @@ export const router = t.router({
 	getRandomTweets: publicProcedure
 		.input(zTweetSchema.pick({ stackId: true }))
 		.query(async ({ input, ctx }) => await queryRandomTweets(ctx.Tweet, { stackId: input })),
-
 	getRandomUnviewedTweets: isUserProcedure
 		.input(zTweetSchema.pick({ stackId: true }))
 		.query(async ({ input, ctx }) =>
@@ -83,7 +82,6 @@ export const router = t.router({
 				statusId: { $nin: ctx.user.viewedPosts },
 			})
 		),
-
 	getTweets: publicProcedure
 		.input(z.object({
 			tweetFilter: zTweetSchema.or(z.record(zTweetSchema.keyof(), z.any())).describe("Accepts either a plain tweet filter or a mongodb filter object"),
@@ -113,21 +111,21 @@ export const router = t.router({
 		.input(zStackSchema.partial())
 		.output(z.array(zStackSchema))
 		.query(async ({ input, ctx }) => await ctx.Stack.find(input).toArray()),
-
 	createStack: isAdminProcedure
 		.input(zStackSchema.pick({ twitterHandle: true }))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ ctx, input }) => (await ctx.Stack.insertOne({ postCount: 0, ...input })).acknowledged),
-
 	deleteStack: isAdminProcedure
 		.input(zStackSchema.pick({ twitterHandle: true }))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ ctx, input }) => (await ctx.Stack.deleteOne({ ...input })).acknowledged),
 })
 
-const createContext = async (opts: CreateAWSLambdaContextOptions<APIGatewayProxyEventV2>) => {
+export const createContext = async (opts: CreateAWSLambdaContextOptions<APIGatewayProxyEventV2>) => {
 	const dbClient = await getDBClient()
-
+	console.log("what trpc sees are qstr parms")
+	console.log(opts.event.queryStringParameters)
+	
 	return {
 		...opts,
 		dbClient,
@@ -140,13 +138,9 @@ const createContext = async (opts: CreateAWSLambdaContextOptions<APIGatewayProxy
 	}
 }
 
-const lambdaHandler = awsLambdaRequestHandler({
+export const handle_request = awsLambdaRequestHandler({
 	router,
 	createContext,
 })
-
-export const handle_request = (event: APIGatewayProxyEventV2, context: Context) => {
-	return lambdaHandler(event, context) 
-}
 
 export type AppRouter = typeof router
