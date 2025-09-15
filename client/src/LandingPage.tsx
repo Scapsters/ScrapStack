@@ -219,6 +219,6 @@ export function TopBar({ centerText }: { centerText?: string }) {
                     </>
                 </div>
             </div>
-        </>
+        </> 
     )
 }

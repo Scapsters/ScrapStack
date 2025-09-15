@@ -90,7 +90,7 @@ export const router = t.router({
 		.query(async ({ input, ctx }) => ((await ctx.Tweet
 			.aggregate([
 				{ $match: input.tweetFilter },
-				{ $sort: input.tweetSorter },
+				{ $sort: Object.keys(input.tweetSorter).length == 0 ? { date_time: 1 } : input.tweetSorter }, // Cover the case of {}. Maintain default in validation for documentation
 				{
 					$facet: {
 						data: [{ $skip: (input.page - 1) * input.pageSize }, { $limit: input.pageSize }]
