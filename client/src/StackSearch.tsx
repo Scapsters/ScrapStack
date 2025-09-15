@@ -2,14 +2,12 @@ import { useMemo, useState } from 'react'
 import { TopBar } from './LandingPage'
 import { Input } from '@headlessui/react'
 import { trpc } from './trpc'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import FuzzySearch from 'fuzzy-search'
 import { Link } from 'react-router-dom'
 
 export default function StackSearch() {
     const [search, setSearch] = useState('')
-
-    const mutation = useMutation(trpc.createStack.mutationOptions())
 
     const { data: stacks, error } = useQuery(trpc.getStacks.queryOptions({}))
     const searchedStacks = useMemo(
@@ -27,7 +25,6 @@ export default function StackSearch() {
 
     if (typeof localStorage != "undefined") {
         localStorage.setItem('userToken2', "")
-        // mutation.mutate({ twitterHandle: "meow emrrrrewr"})
     }
     
     return (

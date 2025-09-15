@@ -1,20 +1,18 @@
+import { Collection, ObjectId, type StrictFilter } from 'mongodb'
 import { initTRPC, TRPCError } from '@trpc/server'
-import { awsLambdaRequestHandler, type CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda'
-import { Collection, type Filter, ObjectId } from 'mongodb'
+import { type OperationMeta } from 'openapi-trpc'
 import { createHash } from 'node:crypto'
 import z from 'zod'
-import { getDBClient, getSecretString } from './db.js'
-import { type StackSchema, type TweetSchema, type UserSchema, zStackSchema, zTweetSchema } from './schemas.js'
-import { getFromHeaders } from './utils/http.js'
-//@ts-ignore
-import type { APIGatewayProxyEventV2, Context } from 'aws-lambda'
-//@ts-ignore
-import { OperationMeta } from 'openapi-trpc'
+
+import { type TweetSchema, zStackSchema, zTweetSchema } from './schemas.js'
+import { getSecretString } from './secrets.js'
+import { getFromHeaders } from '../utils/http.js'
+import { createLocalContext } from '../local.js'
 
 //TODO: rate limiting with cloudflare
 const t = initTRPC
 	.meta<OperationMeta>()
-	.context<Awaited<ReturnType<typeof createContext>>>()
+	.context<Awaited<ReturnType<typeof createLocalContext>>>()
 	.create()
 const publicProcedure = t.procedure
 
@@ -46,9 +44,8 @@ const isAdminProcedure = t.procedure.use(async function isAdmin(opts) {
 	return opts.next({ ctx: { ...ctx, isAdmin: true } })
 })
 
-async function queryRandomTweets(Tweet: Collection<TweetSchema>, filter: Filter<TweetSchema>) {
+async function queryRandomTweets(Tweet: Collection<TweetSchema>, filter: StrictFilter<TweetSchema>) {
 	const tweetIds = await Tweet.find(filter).project<{ _id: ObjectId }>({ _id: 1 }).toArray()
-
 	const sampledIds: ObjectId[] = []
 	for (let i = 0; i < Math.min(20, tweetIds.length); i++) { // Sample either 20 or the amount of IDs, whichever is smaller
 		sampledIds.push(tweetIds.splice(Math.floor(Math.random() * tweetIds.length - 1), 1)[0]._id) // Remove IDs as they are sampled
@@ -65,42 +62,41 @@ export const router = t.router({
 		.mutation(async ({ input, ctx }) =>
 			(
 				await ctx.User.updateOne(ctx.user, {
-					$push: { viewedPosts: { $each: input.map(tweet => tweet.statusId) } },
+					$push: { viewedPosts: { $each: input.map(tweet => tweet.tweet_id) } },
 				})
 			).acknowledged
 		),
 
 	// Tweet
 	getRandomTweets: publicProcedure
-		.input(zTweetSchema.pick({ stackId: true }))
-		.query(async ({ input, ctx }) => await queryRandomTweets(ctx.Tweet, { stackId: input })),
+		.input(zTweetSchema.pick({ stackUsername: true }))
+		.query(async ({ input, ctx }) => await queryRandomTweets(ctx.Tweet, input)),
 	getRandomUnviewedTweets: isUserProcedure
-		.input(zTweetSchema.pick({ stackId: true }))
+		.input(zTweetSchema.pick({ stackUsername: true }))
 		.query(async ({ input, ctx }) =>
 			await queryRandomTweets(ctx.Tweet, {
-				stackId: input,
-				statusId: { $nin: ctx.user.viewedPosts },
+				stackUsername: input.stackUsername,
+				tweet_id: { $nin: ctx.user.viewedPosts },
 			})
 		),
 	getTweets: publicProcedure
 		.input(z.object({
 			tweetFilter: zTweetSchema.or(z.record(zTweetSchema.keyof(), z.any())).describe("Accepts either a plain tweet filter or a mongodb filter object"),
-			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1)).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)")),
-			page: z.number(),
-			pageSize: z.number()
+			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
+			page: z.number().min(1).default(1),
+			pageSize: z.number().max(100).min(1).default(20)
 		}))
-		.output(z.array(z.object({ metadata: z.number(), data: z.array(zTweetSchema) })))
-		.query(async ({ input, ctx }) => await ctx.Tweet
+		.output(z.array(zTweetSchema))
+		.query(async ({ input, ctx }) => ((await ctx.Tweet
 			.aggregate([
 				{ $match: input.tweetFilter },
 				{ $sort: input.tweetSorter },
 				{
 					$facet: {
-						metadata: [{ $count: 'count' }],
 						data: [{ $skip: (input.page - 1) * input.pageSize }, { $limit: input.pageSize }]
 					}
 				}
-			]).toArray() as any),
+			]).toArray()) as { data: TweetSchema[] }[]) [0].data),
 	createTweets: isAdminProcedure
 		.input(z.array(zTweetSchema))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
@@ -119,28 +115,6 @@ export const router = t.router({
 		.input(zStackSchema.pick({ twitterHandle: true }))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ ctx, input }) => (await ctx.Stack.deleteOne({ ...input })).acknowledged),
-})
-
-export const createContext = async (opts: CreateAWSLambdaContextOptions<APIGatewayProxyEventV2>) => {
-	const dbClient = await getDBClient()
-	console.log("what trpc sees are qstr parms")
-	console.log(opts.event.queryStringParameters)
-	
-	return {
-		...opts,
-		dbClient,
-		User: dbClient.db('Scrapstack').collection<UserSchema>('user'),
-		Tweet: dbClient.db('Scrapstack').collection<TweetSchema>('tweet'),
-		Stack: dbClient.db('Scrapstack').collection<StackSchema>('stack'),
-		userToken: null,
-		user: null,
-		isAdmin: false,
-	}
-}
-
-export const handle_request = awsLambdaRequestHandler({
-	router,
-	createContext,
 })
 
 export type AppRouter = typeof router

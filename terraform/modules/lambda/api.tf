@@ -2,7 +2,7 @@ resource "aws_lambda_function" "api" {
   filename      = data.archive_file.api_lambda_zip.output_path
   function_name = "api"
   role          = aws_iam_role.lambda_policy.arn
-  handler       = "api.handle_request"
+  handler       = "lambda.handle_request"
   runtime       = var.node_runtime
   timeout       = 45
 
@@ -11,8 +11,8 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       DB_CREDENTIALS = aws_secretsmanager_secret.db_credentials.id
-      ADMIN_ANSWER = aws_secretsmanager_secret.admin_secret.id
-      ENVIRONMENT = "lambda"
+      ADMIN_ANSWER   = aws_secretsmanager_secret.admin_secret.id
+      ENVIRONMENT    = "lambda"
     }
   }
 }
@@ -48,8 +48,6 @@ resource "aws_lambda_function_url" "api_url" {
       "origin"                # Origin header
     ]
   }
-
-
 }
 
 # Resource-based policy for public access

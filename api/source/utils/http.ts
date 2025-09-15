@@ -1,14 +1,14 @@
 import { TRPCError } from "@trpc/server"
-import type { APIGatewayProxyEventV2 } from "aws-lambda"
+import { type IncomingHttpHeaders } from "http"
 
-export function getFromHeaders(headerName: string, { event }: { event: APIGatewayProxyEventV2 }) {
-    const headerValue = event.headers[headerName]
-    if (!headerValue) {
+export function getFromHeaders(headerName: string, { headers }: { headers: IncomingHttpHeaders }) {
+    const value = headers[headerName]
+    if (!value) {
         console.log(`${headerName} header not found`)
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: `Header: "${headerName}" missing.`,
         })
     }
-    return headerValue
+    return typeof value == "object" ? value.join(" ") : value
 }

@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import './index.css'
 import App from './App.tsx'
 import { ClientOnly, ViteReactSSG, type RouteRecord } from 'vite-react-ssg'
-import { Tweets } from './Tweets.tsx'
+import { Stack } from './Stack.tsx'
 import StackSearch from './StackSearch.tsx'
 import { LandingPage, TopBar } from './LandingPage.tsx'
 
@@ -16,12 +16,13 @@ const routes: RouteRecord[] = [
         element: <><TopBar /><LandingPage /></>
       },
       {
-        path: 'search',
-        element: <><StackSearch /></>
+        path: 'stacks',
+        element: <StackSearch />
       },
       {
         path: 'stacks/:u',
-        element: <><ClientOnly>{ () => <Tweets />}</ClientOnly></>,
+        element: <ClientOnly>{() => <Stack />}</ClientOnly>,
+		getStaticPaths: () => ['Scappy11']
       }
     ]
   },

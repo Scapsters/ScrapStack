@@ -1,0 +1,14 @@
+diff --git a/node_modules/@trpc/client/dist/httpUtils-Bkv1johT.mjs b/node_modules/@trpc/client/dist/httpUtils-Bkv1johT.mjs
+index 58afa14..4bce343 100644
+--- a/node_modules/@trpc/client/dist/httpUtils-Bkv1johT.mjs
++++ b/node_modules/@trpc/client/dist/httpUtils-Bkv1johT.mjs
+@@ -15,7 +15,7 @@ function getFetch(customFetchImpl) {
+ var import_objectSpread2 = __toESM(require_objectSpread2(), 1);
+ function resolveHTTPLinkOptions(opts) {
+ 	return {
+-		url: opts.url.toString(),
++		url: opts?.url?.toString() ?? "",
+ 		fetch: opts.fetch,
+ 		transformer: getTransformer(opts.transformer),
+ 		methodOverride: opts.methodOverride
+# the little bit of ssr that vite-ssg does breaks this, so make it optional (:

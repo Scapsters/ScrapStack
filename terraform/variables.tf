@@ -1,38 +1,46 @@
-variable "bucket_name" {
+variable "BUCKET_NAME" {
   description = "The name of the S3 bucket (remember: global unique!)"
   type        = string
 }
 
-variable "stage_name" {
+variable "STAGE_NAME" {
   description = "The stage name to use for the API gateway"
   type        = string
 }
 
-variable "db_username" {
+variable "DB_USERNAME" {
   type = string
   sensitive = true  
 }
 
-variable "db_password" {
+variable "DB_PASSWORD" {
   type = string
   sensitive = true  
 }
 
-variable "admin_secret" {
+variable "ADMIN_SECRET" {
   description = "SHA256 hash of admin password"
   type = string
   sensitive = true
 }
 
-variable "cloudflare_api_token" {
+variable "CLOUDFLARE_API_TOKEN" {
   type = string
 }
 
-variable "api_documentation_site_path" {
+variable "API_DOCUMENTATION_SITE_PATH" {
   description = "path to api documentation dist"
   type = string
 }
 
-variable "cloudflare_account_id" {
+variable "CLOUDFLARE_ACCOUNT_ID" {
+  type = string
+}
+
+variable "R2_ACCESS_KEY" {
+  type = string
+}
+
+variable "R2_SECRET_KEY" {
   type = string
 }

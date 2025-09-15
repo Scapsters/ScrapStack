@@ -1,4 +1,4 @@
-variable "bucket_name" {
+variable "BUCKET_NAME" {
   description = "The name of the S3 bucket (remember: global unique!)"
   type        = string
 }

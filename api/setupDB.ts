@@ -1,5 +1,5 @@
-import { getDBClient } from "./source/db.js"
-import { StackDB, TweetDB, UserDB } from "./source/schemas.js"
+import { getDBClient } from "./source/api/db.js"
+import { StackDB, TweetDB, UserDB } from "./source/api/schemas.js"
 
 const db = await getDBClient()
 const user = db.db("Scrapstack").collection<UserDB>("user")

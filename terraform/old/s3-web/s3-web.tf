@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "static_website" {
-  bucket = var.bucket_name
+  bucket = var.BUCKET_NAME
 }
 
 resource "aws_s3_bucket_acl" "static_website_acl" {

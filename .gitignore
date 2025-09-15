@@ -8,8 +8,8 @@ dev_variables.tfvars
 **/secret_values.tfvars
 aws/**/*
 .venv/**/*
-**/node_modules/**/*
-api/out-tsc
+**/node_modules
+api/out-docs
 api/out
 api/source/utils/http.ts
 api/out-dev

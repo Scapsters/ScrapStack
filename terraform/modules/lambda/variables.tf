@@ -2,17 +2,17 @@ variable "node_runtime" {
   default = "nodejs22.x"
 }
 
-variable "db_username" {
+variable "DB_USERNAME" {
   type      = string
   sensitive = true
 }
 
-variable "db_password" {
+variable "DB_PASSWORD" {
   type      = string
   sensitive = true
 }
 
-variable "admin_secret" {
-  type = string
+variable "ADMIN_SECRET" {
+  type      = string
   sensitive = true
 }

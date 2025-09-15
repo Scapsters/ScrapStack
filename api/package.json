@@ -6,11 +6,12 @@
   "type": "module",
   "directories": {},
   "scripts": {
-    "build": "esbuild source/api.ts --bundle --platform=node --format=esm --outdir=out",
-    "docs": "tsc source/generateDocs.ts --outDir out-tsc --module ESNext --esModuleInterop --moduleResolution node",
-    "dev": "tsc source/lambdaEmulation.ts --outDir out-dev --module ESNext --esModuleInterop --moduleResolution node && node --watch out-dev/lambdaEmulation",
+    "build": "esbuild source/lambda.ts --bundle --platform=node --format=cjs --outfile=out/lambda.cjs",
+    "docs": "tsc source/docs.ts --outDir out-tsc --module ESNext --esModuleInterop --moduleResolution node",
+    "dev": "concurrently \"tsc source/local.ts --outDir out-dev --module ESNext --esModuleInterop --moduleResolution node -watch\" \"node --watch out-dev/local\"",
     "deploy": "npm run build && npm run docs && cd ../terraform && terraform apply -var-file dev_variables.tfvars",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "patch-package"
   },
   "author": "Scapsters",
   "license": "ISC",
@@ -29,8 +30,10 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",
+    "@types/cors": "^2.8.19",
     "@types/mongodb": "^4.0.7",
     "@types/node": "^24.3.0",
+    "concurrently": "^9.2.1",
     "patch-package": "^8.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"

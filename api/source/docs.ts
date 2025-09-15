@@ -1,7 +1,6 @@
 import { writeFileSync } from "fs";
-//@ts-ignore
 import { generateOpenAPIDocumentFromTRPCRouter } from "openapi-trpc"
-import { router } from "./api.js"
+import { router } from "./api/router.js"
 
 const doc = generateOpenAPIDocumentFromTRPCRouter(router, {
   pathPrefix: '',

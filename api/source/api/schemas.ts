@@ -13,7 +13,7 @@ export type MeowDB = z.infer<typeof zMeowDB>
 
 export const zUserSchema = z.object({
     userToken: z.string(),
-    viewedPosts: z.array(z.number())
+    viewedPosts: z.array(z.string())
 })
 export const zUserDB = zUserSchema.and(DBObject)
 export type UserSchema = z.infer<typeof zUserSchema>
@@ -21,13 +21,18 @@ export type UserDB = z.infer<typeof zUserDB>
 
 
 export const zTweetSchema = z.object({
-    stackId: z.number(),
-    statusId: z.number(),
-    date: z.date(),
-    order: z.number(),
-    text: z.string(),
-    displayName: z.string(),
-    username: z.string(),
+    stackUsername: z.string(),
+    tweet_id: z.string(),
+    tweet_link: z.string(),
+    date_time: z.string(),
+    content: z.string(),
+    user: z.string(),
+    handle: z.string(),
+    is_quote_tweet: z.boolean(),
+    replying_to: z.string(),
+    media_url: z.array(z.string()),
+    has_media: z.boolean(),
+    profile_img: z.string(),
 })
 export const zTweetDB = zTweetSchema.and(DBObject)
 export type TweetSchema = z.infer<typeof zTweetSchema>
