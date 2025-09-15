@@ -13,3 +13,4 @@ api/out-docs
 api/out
 api/source/utils/http.ts
 api/out-dev
+api/out-tsc
