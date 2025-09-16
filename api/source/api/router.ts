@@ -22,9 +22,10 @@ const isUserProcedure = t.procedure.use(async function hasSession(opts) {
 	const { ctx } = opts
 
 	// If user doesn't exist, create it and check again
-	const userToken = getFromHeaders('userToken', ctx)
-	let user = await ctx.User.findOne({ identifier: userToken })
+	const userToken = getFromHeaders('usertoken', ctx)
+	let user = await ctx.User.findOne({ userToken: userToken })
 	if (!user) {
+		console.log("Creating user...")
 		const addedUser = (await ctx.User.insertOne({ userToken, viewedPosts: [] })).acknowledged
 		if (!addedUser) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'JIT user creation not acknowledged' })
 		user = await ctx.User.findOne({ userToken })
@@ -44,11 +45,13 @@ const isAdminProcedure = t.procedure.use(async function isAdmin(opts) {
 	return opts.next({ ctx: { ...ctx, isAdmin: true } })
 })
 
-async function queryRandomTweets(Tweet: Collection<TweetSchema>, filter: StrictFilter<TweetSchema>) {
+async function queryRandomTweets(Tweet: Collection<TweetSchema>, filter: StrictFilter<TweetSchema>, user) {
 	const tweetIds = await Tweet.find(filter).project<{ _id: ObjectId }>({ _id: 1 }).toArray()
 	const sampledIds: ObjectId[] = []
+	console.log(user.viewedPosts.length)
+	console.log(tweetIds.length)
 	for (let i = 0; i < Math.min(20, tweetIds.length); i++) { // Sample either 20 or the amount of IDs, whichever is smaller
-		sampledIds.push(tweetIds.splice(Math.floor(Math.random() * tweetIds.length - 1), 1)[0]._id) // Remove IDs as they are sampled
+		sampledIds.push(tweetIds.splice(Math.floor(Math.random() * tweetIds.length), 1)[0]._id) // Remove IDs as they are sampled
 	}
 	return await Tweet.find({ _id: { $in: sampledIds } }).toArray()
 }
@@ -77,7 +80,7 @@ export const router = t.router({
 			await queryRandomTweets(ctx.Tweet, {
 				stackUsername: input.stackUsername,
 				tweet_id: { $nin: ctx.user.viewedPosts },
-			})
+			}, ctx.user)
 		),
 	getTweets: publicProcedure
 		.input(z.object({

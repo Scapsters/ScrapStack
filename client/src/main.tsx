@@ -9,7 +9,7 @@ import { LandingPage, TopBar } from './LandingPage.tsx'
 const routes: RouteRecord[] = [
   {
     path: '/',
-    element: <StrictMode><App /></StrictMode>,
+    element: <App />,
     children: [
       {
         index: true,
@@ -22,7 +22,7 @@ const routes: RouteRecord[] = [
       {
         path: 'stacks/:u',
         element: <ClientOnly>{() => <Stack />}</ClientOnly>,
-		getStaticPaths: () => ['Scappy11']
+		getStaticPaths: () => ['Scappy11'].map(user => `/stacks/${user}`)
       }
     ]
   },

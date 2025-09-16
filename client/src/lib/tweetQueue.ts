@@ -15,12 +15,10 @@ export class TweetQueue {
     tweetsViewed = 0
 
     setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>
-    firstTweet: TweetQuery
     getNextTweet: () => TweetQuery
 
     constructor(setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>, firstTweet: TweetQuery, getNextTweet: () => TweetQuery) {
         this.setBatches = setBatches
-        this.firstTweet = firstTweet
         this.getNextTweet = getNextTweet
         this.setBatches(batches => [...batches, this.extract(firstTweet)])
         this.fillQueue()
@@ -30,11 +28,11 @@ export class TweetQueue {
         const totalBatchesViewed = Math.floor(this.tweetsViewed / this.batchSize)
         const batchesLeft = this.totalBatches - totalBatchesViewed
         const batchesToGet = this.maxLead - batchesLeft
-        for (let i = 0; i < batchesToGet; i++) {
-            console.log("ading more")
+        for (let i = 0; i < 1; i++) {
             this.setBatches(batches => [...batches, this.extract(this.getNextTweet())])
             this.totalBatches++
-        }}
+        }
+    }
 
     async extract(query: TweetQuery): Promise<TweetWithURLs[]> {
         return query.then((tweets) =>
