@@ -45,7 +45,7 @@ async function getScraperTweet(tweet_id) {
   console.log(API_ROOT + "getTweets?input=" + query)
   const resp = await fetch(API_ROOT + "getTweets?input=" + query);
   const data = await resp.json();
-  const tweetData = data.result.data[0].data[0];
+  const tweetData = data.result.data[0];
 
   const mediaUrl =
     tweetData.media_url

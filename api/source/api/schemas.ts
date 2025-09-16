@@ -13,7 +13,8 @@ export type MeowDB = z.infer<typeof zMeowDB>
 
 export const zUserSchema = z.object({
     userToken: z.string(),
-    viewedPosts: z.array(z.string())
+    viewedPosts: z.array(z.string()),
+    sentPosts: z.array(z.string())
 })
 export const zUserDB = zUserSchema.and(DBObject)
 export type UserSchema = z.infer<typeof zUserSchema>

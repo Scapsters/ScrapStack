@@ -42,6 +42,7 @@ export async function getDBClient(): Promise<MongoClient> {
         connectTimeoutMS: 5000,
         serverSelectionTimeoutMS: 5000,
         maxIdleTimeMS: 10000,
+        writeConcern: { w: "majority", j: true }
     })
     await client.connect()
 

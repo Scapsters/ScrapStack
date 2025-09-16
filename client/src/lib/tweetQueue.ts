@@ -5,11 +5,10 @@ type TweetQuery = ReturnType<typeof trpcClient.getTweets.query>
 export type TweetWithURLs = {
     data: TweetSchema
     mediaUrlBlobs: Promise<string>[]
-    view: () => void
 }
 
 export class TweetQueue {
-    maxLead = 3
+    maxLead = 1
     totalBatches = 0
     batchSize = 20 //TODO: make is not hardcode
     tweetsViewed = 0
@@ -17,19 +16,26 @@ export class TweetQueue {
     setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>
     getNextTweet: () => TweetQuery
 
-    constructor(setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>, firstTweet: TweetQuery, getNextTweet: () => TweetQuery) {
+    constructor(setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>, firstTweet: () => TweetQuery, getNextTweet: () => TweetQuery) {
         this.setBatches = setBatches
         this.getNextTweet = getNextTweet
-        this.setBatches(batches => [...batches, this.extract(firstTweet)])
-        this.fillQueue()
+        this.fillQueue(firstTweet())
     }
 
-    fillQueue() {
+    async fillQueue(firstTweet?: TweetQuery) {
+        if (firstTweet) {
+            const firstBatch = this.extract(firstTweet)
+            this.setBatches(batches => [...batches, firstBatch])
+            await firstBatch
+        }
+
         const totalBatchesViewed = Math.floor(this.tweetsViewed / this.batchSize)
         const batchesLeft = this.totalBatches - totalBatchesViewed
         const batchesToGet = this.maxLead - batchesLeft
-        for (let i = 0; i < 1; i++) {
-            this.setBatches(batches => [...batches, this.extract(this.getNextTweet())])
+        for (let i = 0; i < batchesToGet; i++) {
+            const nextBatch = this.extract(this.getNextTweet())
+            this.setBatches(batches => [...batches, nextBatch])
+            await nextBatch
             this.totalBatches++
         }
     }

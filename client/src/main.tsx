@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import './index.css'
 import App from './App.tsx'
 import { ClientOnly, ViteReactSSG, type RouteRecord } from 'vite-react-ssg'

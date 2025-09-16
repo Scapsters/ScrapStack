@@ -45,7 +45,9 @@ resource "aws_lambda_function_url" "api_url" {
       "x-amz-security-token", # AWS signature headers
       "x-requested-with",     # Common AJAX header
       "accept",               # Accept header
-      "origin"                # Origin header
+      "origin",                # Origin header
+      "usertoken",
+      "usertoken2",
     ]
   }
 }

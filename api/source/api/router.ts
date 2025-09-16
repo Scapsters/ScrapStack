@@ -8,6 +8,7 @@ import { type TweetSchema, zStackSchema, zTweetSchema } from './schemas.js'
 import { getSecretString } from './secrets.js'
 import { getFromHeaders } from '../utils/http.js'
 import { createLocalContext } from '../local.js'
+import { type UserSchema } from './schemas.js'
 
 //TODO: rate limiting with cloudflare
 const t = initTRPC
@@ -26,7 +27,7 @@ const isUserProcedure = t.procedure.use(async function hasSession(opts) {
 	let user = await ctx.User.findOne({ userToken: userToken })
 	if (!user) {
 		console.log("Creating user...")
-		const addedUser = (await ctx.User.insertOne({ userToken, viewedPosts: [] })).acknowledged
+		const addedUser = (await ctx.User.insertOne({ userToken, viewedPosts: [], sentPosts: [] })).acknowledged
 		if (!addedUser) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'JIT user creation not acknowledged' })
 		user = await ctx.User.findOne({ userToken })
 		if (!user) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'JIT user creation acknowledged but not found' })
@@ -45,15 +46,27 @@ const isAdminProcedure = t.procedure.use(async function isAdmin(opts) {
 	return opts.next({ ctx: { ...ctx, isAdmin: true } })
 })
 
-async function queryRandomTweets(Tweet: Collection<TweetSchema>, filter: StrictFilter<TweetSchema>, user) {
+async function queryRandomTweets(
+	Tweet: Collection<TweetSchema>,
+	User: Collection<UserSchema>,
+	filter: StrictFilter<TweetSchema>, 
+	user: UserSchema | null
+) {
 	const tweetIds = await Tweet.find(filter).project<{ _id: ObjectId }>({ _id: 1 }).toArray()
-	const sampledIds: ObjectId[] = []
-	console.log(user.viewedPosts.length)
 	console.log(tweetIds.length)
-	for (let i = 0; i < Math.min(20, tweetIds.length); i++) { // Sample either 20 or the amount of IDs, whichever is smaller
+	const sampledIds: ObjectId[] = []
+	const length = tweetIds.length
+	for (let i = 0; i < Math.min(20, length); i++) { // Sample either 20 or the amount of IDs, whichever is smaller
 		sampledIds.push(tweetIds.splice(Math.floor(Math.random() * tweetIds.length), 1)[0]._id) // Remove IDs as they are sampled
 	}
-	return await Tweet.find({ _id: { $in: sampledIds } }).toArray()
+	console.log(sampledIds.length)
+	const sampledTweets = await Tweet.find({ _id: { $in: sampledIds } }).toArray()
+	if (user) {
+		await User.updateOne(user, {
+			$push: { sentPosts: { $each: sampledTweets.map(tweet => tweet.tweet_id) } }
+		})
+	}
+	return sampledTweets
 }
 
 export const router = t.router({
@@ -62,26 +75,39 @@ export const router = t.router({
 		.mutation(async ({ ctx }) => (await ctx.User.deleteOne(ctx.User)).acknowledged),
 	markTweet: isUserProcedure
 		.input(z.array(zTweetSchema))
-		.mutation(async ({ input, ctx }) =>
-			(
+		.mutation(async ({ input, ctx }) =>{
+			const found = await ctx.Tweet.findOne(input[0])
+			console.log("found", !!found)
+			const result = (
 				await ctx.User.updateOne(ctx.user, {
 					$push: { viewedPosts: { $each: input.map(tweet => tweet.tweet_id) } },
 				})
 			).acknowledged
-		),
+			console.log(result)
+		}),
 
 	// Tweet
 	getRandomTweets: publicProcedure
 		.input(zTweetSchema.pick({ stackUsername: true }))
-		.query(async ({ input, ctx }) => await queryRandomTweets(ctx.Tweet, input)),
+		.query(async ({ input, ctx }) => await queryRandomTweets(ctx.Tweet, ctx.User, input, ctx.user)),
 	getRandomUnviewedTweets: isUserProcedure
 		.input(zTweetSchema.pick({ stackUsername: true }))
-		.query(async ({ input, ctx }) =>
-			await queryRandomTweets(ctx.Tweet, {
+		.query(async ({ input, ctx }) => {
+			// first, filter by posts sent to the user. Sometimes, a post is sent but never seen. When this list is empty, consult the viewed posts list.
+			const unsentTweets = await queryRandomTweets(ctx.Tweet, ctx.User, {
 				stackUsername: input.stackUsername,
-				tweet_id: { $nin: ctx.user.viewedPosts },
-			}, ctx.user)
-		),
+				tweet_id: { $nin: ctx.user.sentPosts },
+			},
+				ctx.user
+			)
+			if (unsentTweets.length > 0) return unsentTweets
+			return await queryRandomTweets(ctx.Tweet, ctx.User, {
+				stackUsername: input.stackUsername,
+				tweet_id: { $nin: ctx.user.viewedPosts }
+			},
+				ctx.user
+			)
+		}),
 	getTweets: publicProcedure
 		.input(z.object({
 			tweetFilter: zTweetSchema.or(z.record(zTweetSchema.keyof(), z.any())).describe("Accepts either a plain tweet filter or a mongodb filter object"),
@@ -90,16 +116,24 @@ export const router = t.router({
 			pageSize: z.number().max(100).min(1).default(20)
 		}))
 		.output(z.array(zTweetSchema))
-		.query(async ({ input, ctx }) => ((await ctx.Tweet
-			.aggregate([
-				{ $match: input.tweetFilter },
-				{ $sort: Object.keys(input.tweetSorter).length == 0 ? { date_time: 1 } : input.tweetSorter }, // Cover the case of {}. Maintain default in validation for documentation
-				{
-					$facet: {
-						data: [{ $skip: (input.page - 1) * input.pageSize }, { $limit: input.pageSize }]
+		.query(async ({ input, ctx }) => {
+			const aggregationResult = ((await ctx.Tweet
+				.aggregate([
+					{ $match: input.tweetFilter },
+					{ $sort: Object.keys(input.tweetSorter).length == 0 ? { date_time: 1 } : input.tweetSorter }, // Cover the case of {}. Maintain default in validation for documentation
+					{
+						$facet: {
+							data: [{ $skip: (input.page - 1) * input.pageSize }, { $limit: input.pageSize }]
+						}
 					}
-				}
-			]).toArray()) as { data: TweetSchema[] }[]) [0].data),
+				]).toArray()) as { data: TweetSchema[] }[])[0].data
+			if (ctx.user) {
+				await ctx.User.updateOne(ctx.user, {
+					$push: { sentPosts: { $each: aggregationResult.map(tweet => tweet.tweet_id) } }
+				})
+			}
+			return aggregationResult
+		}),
 	createTweets: isAdminProcedure
 		.input(z.array(zTweetSchema))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))

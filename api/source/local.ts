@@ -6,6 +6,7 @@ import type { StackSchema, TweetSchema, UserSchema } from "./api/schemas.js"
 import { type CreateHTTPContextOptions } from '@trpc/server/adapters/standalone'
 
 export async function createLocalContext(opts: CreateHTTPContextOptions) {
+	console.log(opts.req.url)
 	const dbClient = await getDBClient()
 	
 	return {
