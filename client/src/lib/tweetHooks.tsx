@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { TweetWithURLs } from "./tweetQueue"
 import { trpcClient } from "@/trpc"
 
 export const useTweet = (tweet: TweetWithURLs): [React.ReactNode[], boolean, () => void] => {
-    const [urls, areURLsLoading] = usePromise<string[]>(Promise.all(tweet.mediaUrlBlobs), [])
+    const mediaPromise = useMemo(() => Promise.all(tweet.mediaUrlBlobs), [tweet.mediaUrlBlobs])
+    const [urls, areURLsLoading] = usePromise(mediaPromise, [])
     return [
         urls.map((url) => url.includes("mp4") ? <video src={url} className="rounded-lg border-1 border-black/10"></video> : <img className="rounded-lg border-1 border-black/10" src={url}></img>),
         areURLsLoading,

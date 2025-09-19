@@ -1,5 +1,6 @@
+import { useCallback, useRef } from 'react'
 import type { TweetSchema } from '../../../api/source/api/schemas'
-import { trpcClient } from '../trpc';
+import { trpcClient } from '../trpc'
 
 type TweetQuery = ReturnType<typeof trpcClient.getTweets.query>
 export type TweetWithURLs = {
@@ -7,40 +8,17 @@ export type TweetWithURLs = {
     mediaUrlBlobs: Promise<string>[]
 }
 
-export class TweetQueue {
-    maxLead = 1
-    totalBatches = 0
-    batchSize = 20 //TODO: make is not hardcode
-    tweetsViewed = 0
-
-    setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>
+export function useTweetQueue(
+    setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>,
     getNextTweet: () => TweetQuery
+) {
 
-    constructor(setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>, firstTweet: () => TweetQuery, getNextTweet: () => TweetQuery) {
-        this.setBatches = setBatches
-        this.getNextTweet = getNextTweet
-        this.fillQueue(firstTweet())
-    }
+    const maxLead = 2
+    const batchSize = 20 //TODO: make is not hardcode
+    const totalBatches = useRef(0)
+    const tweetsViewed = useRef(0)
 
-    async fillQueue(firstTweet?: TweetQuery) {
-        if (firstTweet) {
-            const firstBatch = this.extract(firstTweet)
-            this.setBatches(batches => [...batches, firstBatch])
-            await firstBatch
-        }
-
-        const totalBatchesViewed = Math.floor(this.tweetsViewed / this.batchSize)
-        const batchesLeft = this.totalBatches - totalBatchesViewed
-        const batchesToGet = this.maxLead - batchesLeft
-        for (let i = 0; i < batchesToGet; i++) {
-            const nextBatch = this.extract(this.getNextTweet())
-            this.setBatches(batches => [...batches, nextBatch])
-            await nextBatch
-            this.totalBatches++
-        }
-    }
-
-    async extract(query: TweetQuery): Promise<TweetWithURLs[]> {
+    const extract = useCallback(async (query: TweetQuery): Promise<TweetWithURLs[]> => {
         return query.then((tweets) =>
             tweets.map((tweet) => {
                 const mediaUrlResponses = tweet.media_url.map((url) => fetch(url))
@@ -54,10 +32,30 @@ export class TweetQueue {
                 }
             })
         )
-    }
+    }, [])
 
-    view() {
-        this.tweetsViewed++
-        this.fillQueue()
-    }
+    const fillQueue = useCallback(async (firstTweet?: () => TweetQuery) => {
+        if (firstTweet) {
+            const firstBatch = extract(firstTweet())
+            setBatches(batches => [...batches, firstBatch])
+            await firstBatch
+        }
+
+        const totalBatchesViewed = Math.floor(tweetsViewed.current / batchSize)
+        const batchesLeft = totalBatches.current - totalBatchesViewed
+        const batchesToGet = maxLead - batchesLeft
+        for (let i = 0; i < batchesToGet; i++) {
+            const nextBatch = extract(getNextTweet())
+            setBatches(batches => [...batches, nextBatch])
+            await nextBatch
+            totalBatches.current++
+        }
+    }, [extract, getNextTweet, setBatches])
+
+    const view = useCallback(() => {
+        tweetsViewed.current++
+        fillQueue()
+    }, [fillQueue])
+
+    return [view, fillQueue]
 }
