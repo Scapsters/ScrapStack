@@ -1,5 +1,5 @@
 import { awsLambdaRequestHandler, CreateAWSLambdaContextOptions } from "@trpc/server/adapters/aws-lambda"
-import { getDBClient } from "./api/db.js"
+import { getDBClient } from "./utils/db.js"
 import { APIGatewayProxyEventV2 } from "aws-lambda"
 import { StackSchema, TweetSchema, UserSchema } from "./api/schemas.js"
 import { router } from './api/router.js';
@@ -22,4 +22,7 @@ export const createLambdaContext = async (opts: CreateAWSLambdaContextOptions<AP
 export const handle_request = awsLambdaRequestHandler({
 	router,
 	createContext: createLambdaContext,
+	onError({ error }) {
+		console.log("Error: ", error)
+	}
 })

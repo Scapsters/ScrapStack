@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom'
-
 export function LandingPage() {
     return (
         <>
@@ -200,25 +198,5 @@ export function LandingPage() {
                 </div>
             </div>
         </>
-    )
-}
-
-export function TopBar({ centerText }: { centerText?: string }) {
-    return (
-        <>
-            <div className="bg-cyan border-b-10 border-b-cyan-light h-20 text-light">
-                <div className="flex justify-between items-center px-10 h-full text-xl">
-                    <>
-                        <Link className="text-2xl hover:underline cursor-pointer" to="/">
-                            Scrapstack
-                        </Link>
-                        <p>{centerText}</p>
-                        <Link className="hover:underline cursor-pointer" to="/stacks">
-                            Search Stacks
-                        </Link>
-                    </>
-                </div>
-            </div>
-        </> 
     )
 }

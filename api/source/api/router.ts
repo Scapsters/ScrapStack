@@ -1,14 +1,11 @@
-import { Collection, ObjectId, type StrictFilter } from 'mongodb'
 import { initTRPC, TRPCError } from '@trpc/server'
 import { type OperationMeta } from 'openapi-trpc'
-import { createHash } from 'node:crypto'
 import z from 'zod'
 
 import { type TweetSchema, zStackSchema, zTweetSchema } from './schemas.js'
-import { getSecretString } from './secrets.js'
-import { getFromHeaders } from '../utils/http.js'
 import { createLocalContext } from '../local.js'
-import { type UserSchema } from './schemas.js'
+import { checkIsAdmin, getUser } from '../utils/auth.js'
+import { queryRandomTweets } from './db.js'
 
 //TODO: rate limiting with cloudflare
 const t = initTRPC
@@ -21,53 +18,15 @@ const ACKNOWLEDGE_DESCRIPTION = "Whether the operation was acknowledged"
 
 const isUserProcedure = t.procedure.use(async function hasSession(opts) {
 	const { ctx } = opts
-
-	// If user doesn't exist, create it and check again
-	const userToken = getFromHeaders('usertoken', ctx)
-	let user = await ctx.User.findOne({ userToken: userToken })
-	if (!user) {
-		console.log("Creating user...")
-		const addedUser = (await ctx.User.insertOne({ userToken, viewedPosts: [], sentPosts: [] })).acknowledged
-		if (!addedUser) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'JIT user creation not acknowledged' })
-		user = await ctx.User.findOne({ userToken })
-		if (!user) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'JIT user creation acknowledged but not found' })
-	}
+	const user = await getUser(ctx)
 	return opts.next({ ctx: { ...ctx, user } })
 })
 
 const isAdminProcedure = t.procedure.use(async function isAdmin(opts) {
 	const { ctx } = opts
-
-	const adminPassword = getFromHeaders('authorization', ctx).split(' ')[1]
-	const adminAnswer = await getSecretString('ADMIN_ANSWER')
-	const isAdmin = !!adminPassword && createHash('sha256').update(adminPassword).digest('hex') == adminAnswer
-	if (!isAdmin) throw new TRPCError({ code: 'UNAUTHORIZED' })
-
+	if (!(await checkIsAdmin(ctx))) throw new TRPCError({ code: 'UNAUTHORIZED' })
 	return opts.next({ ctx: { ...ctx, isAdmin: true } })
 })
-
-async function queryRandomTweets(
-	Tweet: Collection<TweetSchema>,
-	User: Collection<UserSchema>,
-	filter: StrictFilter<TweetSchema>, 
-	user: UserSchema | null
-) {
-	const tweetIds = await Tweet.find(filter).project<{ _id: ObjectId }>({ _id: 1 }).toArray()
-	console.log(tweetIds.length)
-	const sampledIds: ObjectId[] = []
-	const length = tweetIds.length
-	for (let i = 0; i < Math.min(20, length); i++) { // Sample either 20 or the amount of IDs, whichever is smaller
-		sampledIds.push(tweetIds.splice(Math.floor(Math.random() * tweetIds.length), 1)[0]._id) // Remove IDs as they are sampled
-	}
-	console.log(sampledIds.length)
-	const sampledTweets = await Tweet.find({ _id: { $in: sampledIds } }).toArray()
-	if (user) {
-		await User.updateOne(user, {
-			$push: { sentPosts: { $each: sampledTweets.map(tweet => tweet.tweet_id) } }
-		})
-	}
-	return sampledTweets
-}
 
 export const router = t.router({
 	// User
@@ -88,35 +47,56 @@ export const router = t.router({
 
 	// Tweet
 	getRandomTweets: publicProcedure
-		.input(zTweetSchema.pick({ stackUsername: true }))
-		.query(async ({ input, ctx }) => await queryRandomTweets(ctx.Tweet, ctx.User, input, ctx.user)),
-	getRandomUnviewedTweets: isUserProcedure
-		.input(zTweetSchema.pick({ stackUsername: true }))
+		.input(zTweetSchema.pick({ stackUsername: true }).and(zTweetSchema.partial()))
 		.query(async ({ input, ctx }) => {
+			if (input.isBanned && !(await checkIsAdmin(ctx))) {
+				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated" })
+			}
+			return await queryRandomTweets(ctx.Tweet, ctx.User, input, ctx.user)
+		}),
+	getRandomUnviewedTweets: isUserProcedure
+		.input(zTweetSchema.pick({ stackUsername: true }).and(zTweetSchema.partial()))
+		.query(async ({ input, ctx }) => {
+			if (input.isBanned && !(await checkIsAdmin(ctx))) {
+				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated" })
+			}
 			// first, filter by posts sent to the user. Sometimes, a post is sent but never seen. When this list is empty, consult the viewed posts list.
-			const unsentTweets = await queryRandomTweets(ctx.Tweet, ctx.User, {
-				stackUsername: input.stackUsername,
-				tweet_id: { $nin: ctx.user.sentPosts },
-			},
+			const unsentTweets = await queryRandomTweets(ctx.Tweet, ctx.User, 
+				{
+					stackUsername: input.stackUsername,
+					tweet_id: { $nin: ctx.user.sentPosts },
+				},
 				ctx.user
 			)
 			if (unsentTweets.length > 0) return unsentTweets
-			return await queryRandomTweets(ctx.Tweet, ctx.User, {
-				stackUsername: input.stackUsername,
-				tweet_id: { $nin: ctx.user.viewedPosts }
-			},
+			return await queryRandomTweets(ctx.Tweet, ctx.User, 
+				{
+					stackUsername: input.stackUsername,
+					tweet_id: { $nin: ctx.user.viewedPosts }
+				},
 				ctx.user
 			)
 		}),
 	getTweets: publicProcedure
 		.input(z.object({
-			tweetFilter: zTweetSchema.or(z.record(zTweetSchema.keyof(), z.any())).describe("Accepts either a plain tweet filter or a mongodb filter object"),
+			tweetFilter: zTweetSchema.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
 			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
 			page: z.number().min(1).default(1),
 			pageSize: z.number().max(100).min(1).default(20)
 		}))
 		.output(z.array(zTweetSchema))
 		.query(async ({ input, ctx }) => {
+			const isSearchingForBans = input.tweetFilter.isBanned
+			if (isSearchingForBans && !(await checkIsAdmin(ctx))) {
+				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated" })
+			}
+			const tagsBeingSearched = input.tweetFilter.tagSet
+			if (tagsBeingSearched) {
+				const user = await getUser(ctx)
+				for (const tag of tagsBeingSearched) {
+					if (user.userToken != tag.owner) throw new TRPCError({ code: 'FORBIDDEN', message: "User is not owner of requested tag" })
+				}
+			}
 			const aggregationResult = ((await ctx.Tweet
 				.aggregate([
 					{ $match: input.tweetFilter },
@@ -127,17 +107,16 @@ export const router = t.router({
 						}
 					}
 				]).toArray()) as { data: TweetSchema[] }[])[0].data
-			if (ctx.user) {
-				await ctx.User.updateOne(ctx.user, {
-					$push: { sentPosts: { $each: aggregationResult.map(tweet => tweet.tweet_id) } }
-				})
-			}
 			return aggregationResult
 		}),
 	createTweets: isAdminProcedure
 		.input(z.array(zTweetSchema))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ input, ctx }) => (await ctx.Tweet.insertMany(input)).acknowledged),
+	banTweet: isAdminProcedure
+		.input(zTweetSchema)
+		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
+		.mutation(async ({ input, ctx }) => (await ctx.Tweet.updateOne(input, { $set: { isBanned: true }} )).acknowledged),
 
 	// Stack
 	getStacks: publicProcedure

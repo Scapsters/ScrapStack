@@ -30,6 +30,7 @@
 @theme {
   --breakpoint-2xl: 89rem;
   --color-light       : #EDE7E3;
+  --color-extra-light: #fef8f4;
   --color-cyan-light: #82C0CC;
   --color-cyan     : #489FB5;
   --color-cyan-dark : #16697A;
@@ -92,7 +93,27 @@
 }
 
 .button {
-  @apply ml-4 rounded-lg border-2 border-transparent hover:bg-black/10 p-1 hover:border-cyan h-min active:bg-cyan-light
+  @apply rounded-md border-2 border-transparent hover:bg-black/10 p-1 hover:border-cyan h-min active:bg-cyan-light 
+}
+
+.input {
+  @apply text-sm/6 text-black rounded-md border-none bg-black/5 focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25
+}
+
+.label {
+  @apply font-medium text-black text-sm/6 align-middle
+}
+
+.radio-option {
+  @apply 
+    rounded-md p-2
+    hover:cursor-pointer
+    hover:data-disabled:cursor-default
+    hover:bg-cyan-light/50
+    data-checked:bg-cyan-light
+    data-disabled:text-black/50
+    data-disabled:bg-black/10 
+    data-checked:data-disabled:bg-black/20
 }
 
 .square {

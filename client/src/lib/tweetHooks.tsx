@@ -55,7 +55,7 @@ export function useIsVisible(ref: React.RefObject<HTMLElement | null>): [boolean
             observer.disconnect()
             observerRef.current = null
         }
-    }, [ref, ref.current])
+    }, [ref])
 
     const removeListener = () => {
         observerRef.current?.disconnect()

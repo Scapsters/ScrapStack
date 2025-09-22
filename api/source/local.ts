@@ -1,7 +1,7 @@
 import { router } from "./api/router.js"
 import { createHTTPServer } from '@trpc/server/adapters/standalone'
 import cors from 'cors'
-import { getDBClient } from "./api/db.js"
+import { getDBClient } from "./utils/db.js"
 import type { StackSchema, TweetSchema, UserSchema } from "./api/schemas.js"
 import { type CreateHTTPContextOptions } from '@trpc/server/adapters/standalone'
 
@@ -24,5 +24,8 @@ export async function createLocalContext(opts: CreateHTTPContextOptions) {
 createHTTPServer({
 	middleware: cors(),
 	router: router,
-	createContext: createLocalContext
+	createContext: createLocalContext,
+	onError({ error }) {
+		console.log("Error: ", error)
+	}
 }).listen(3003)

@@ -1,4 +1,4 @@
-import { getDBClient } from "./source/api/db.js"
+import { getDBClient } from "./source/utils/db.js"
 import { StackDB, TweetDB, UserDB } from "./source/api/schemas.js"
 
 const db = await getDBClient()

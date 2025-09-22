@@ -1,15 +1,6 @@
 import z from "zod"
 
-const DBObject = z.object({ _id: z.string() }).strict()
-
-export const zMeowSchema = z.object({
-    name: z.string(),
-    value: z.number(),
-}).strict()
-export const zMeowDB = zMeowSchema.and(DBObject)
-export type MeowSchema = z.infer<typeof zMeowSchema>
-export type MeowDB = z.infer<typeof zMeowDB>
-
+const DBObject = z.object({ _id: z.string() })
 
 export const zUserSchema = z.object({
     userToken: z.string(),
@@ -22,7 +13,7 @@ export type UserDB = z.infer<typeof zUserDB>
 
 
 export const zTweetSchema = z.object({
-    stackUsername: z.string(),
+    stackUsername: z.string().describe("Stack.twitterHandle"),
     tweet_id: z.string(),
     tweet_link: z.string(),
     date_time: z.string(),
@@ -34,6 +25,11 @@ export const zTweetSchema = z.object({
     media_url: z.array(z.string()),
     has_media: z.boolean(),
     profile_img: z.string(),
+    isBanned: z.boolean(),
+    tagSet: z.array(z.object({
+        owner: z.string().describe("User.userToken"),
+        tags: z.array(z.string())
+    }))
 })
 export const zTweetDB = zTweetSchema.and(DBObject)
 export type TweetSchema = z.infer<typeof zTweetSchema>

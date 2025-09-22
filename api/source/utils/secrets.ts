@@ -1,6 +1,6 @@
 import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager"
-import { getFromEnvironment } from "../utils/env.js"
-import { AWSError } from "../utils/errors.js"
+import { getFromEnvironment } from "./env.js"
+import { TRPCError } from "@trpc/server"
 
 export async function getSecretString(secretEnviornmentName: string) {
     const environment = getFromEnvironment('ENVIRONMENT')
@@ -12,6 +12,6 @@ export async function getSecretString(secretEnviornmentName: string) {
     const secretClient = new SecretsManagerClient({ region: 'us-east-1' })
     const secretValueCommand = new GetSecretValueCommand({ SecretId: secretId })
     const secretValueResponse = await secretClient.send(secretValueCommand)
-    if (!secretValueResponse?.SecretString) throw new AWSError()
+    if (!secretValueResponse?.SecretString) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message:'Failed to get secret string ' + secretEnviornmentName })
     return secretValueResponse.SecretString
 }
