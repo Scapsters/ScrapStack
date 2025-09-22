@@ -71,19 +71,19 @@ export function ConfirmActionButton({ onClick, successMessage, failureMessage, r
                             if (open && !isTakingAction.current) takeAction(close)
                             return (
                                 <div className="flex flex-col items-center mb-1">
-                                    <div className="p-2 px-6 w-max bg-white rounded-md border-2 border-cyan-dark">{status}</div>
-                                    <div className="relative">
-                                        <div className="top-1 w-0 h-0 
+                                    <div className="p-2 px-6 w-max bg-white rounded-md border-2 border-cyan-dark z-30">{status}</div>
+                                    <div className="relative z-30">
+                                        <div className="top-1 w-0 h-0 z-20
                                             border-l-10 border-l-transparent
                                             border-t-10 border-t-transparent
                                             border-r-10 border-r-transparent">
                                         </div>
-                                        <div className="absolute -left-[2px] -top-[1px] w-0 h-0 
+                                        <div className="absolute -left-[2px] -top-[1px] w-0 h-0 z-20 
                                             border-l-12 border-l-transparent
                                             border-t-12 border-t-cyan-dark
                                             border-r-12 border-r-transparent">
                                         </div>
-                                        <div className="absolute -top-0.5 z-3 w-0 h-0 
+                                        <div className="absolute -top-0.5 w-0 h-0 z-20 
                                             border-l-10 border-l-transparent
                                             border-t-10 border-t-white
                                             border-r-10 border-r-transparent">

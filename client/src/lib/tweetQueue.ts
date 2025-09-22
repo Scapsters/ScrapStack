@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { TweetSchema } from '../../../api/source/api/schemas'
 import { trpcClient } from '../trpc'
 
@@ -8,10 +8,9 @@ export type TweetWithURLs = {
     mediaUrlBlobs: Promise<string>[]
 }
 
-export function useTweetQueue(
-    setBatches: React.Dispatch<React.SetStateAction<Promise<TweetWithURLs[]>[]>>,
-    getNextTweet: () => TweetQuery
-) {
+export function useTweetQueue() {
+    const [batches, setBatches] = useState<Promise<TweetWithURLs[]>[]>([])
+    const [getNextTweet, setGetNextTweet] = useState<(batchIndex: number) => TweetQuery>()
 
     const maxLead = 2
     const batchSize = 20 //TODO: make is not hardcode
@@ -34,7 +33,7 @@ export function useTweetQueue(
         )
     }, [])
 
-    const fillQueue = useCallback(async (firstTweet?: () => TweetQuery) => {
+    const fillQueue = useCallback(async (getNextTweet: (batchIndex: number) => TweetQuery, firstTweet?: () => TweetQuery) => {
         if (firstTweet) {
             const firstBatch = extract(firstTweet())
             setBatches(batches => [...batches, firstBatch])
@@ -45,17 +44,24 @@ export function useTweetQueue(
         const batchesLeft = totalBatches.current - totalBatchesViewed
         const batchesToGet = maxLead - batchesLeft
         for (let i = 0; i < batchesToGet; i++) {
-            const nextBatch = extract(getNextTweet())
+            const nextBatch = extract(getNextTweet(totalBatches.current))
             setBatches(batches => [...batches, nextBatch])
             await nextBatch
             totalBatches.current++
         }
-    }, [extract, getNextTweet, setBatches])
+    }, [extract, setBatches])
 
     const view = useCallback(() => {
         tweetsViewed.current++
-        fillQueue()
+        if (getNextTweet) fillQueue(getNextTweet)
+    }, [fillQueue, getNextTweet])
+
+    const setQueue = useCallback((getNextTweet: (batchIndex: number) => TweetQuery, firstTweet?: () => TweetQuery) => {
+        setBatches([])
+        totalBatches.current = 0
+        setGetNextTweet(getNextTweet)
+        fillQueue(getNextTweet, firstTweet)
     }, [fillQueue])
 
-    return [view, fillQueue]
+    return [batches, view, setQueue] as const
 }

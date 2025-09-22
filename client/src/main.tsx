@@ -5,11 +5,12 @@ import { Stack } from './Stack.tsx'
 import StackSearch from './StackSearch.tsx'
 import { LandingPage } from './LandingPage.tsx'
 import { TopBar } from './components/TopBar.tsx'
+import { StrictMode } from 'react'
 
 const routes: RouteRecord[] = [
 	{
 		path: '/',
-		element: <App />,
+		element: <StrictMode><App /></StrictMode>,
 		children: [
 			{
 				index: true,

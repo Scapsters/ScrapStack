@@ -48,17 +48,19 @@ export const router = t.router({
 	// Tweet
 	getRandomTweets: publicProcedure
 		.input(zTweetSchema.pick({ stackUsername: true }).and(zTweetSchema.partial()))
+		.output(z.array(zTweetSchema))
 		.query(async ({ input, ctx }) => {
 			if (input.isBanned && !(await checkIsAdmin(ctx))) {
-				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated" })
+				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated to query banned tweets" })
 			}
 			return await queryRandomTweets(ctx.Tweet, ctx.User, input, ctx.user)
 		}),
 	getRandomUnviewedTweets: isUserProcedure
 		.input(zTweetSchema.pick({ stackUsername: true }).and(zTweetSchema.partial()))
+		.output(z.array(zTweetSchema))
 		.query(async ({ input, ctx }) => {
 			if (input.isBanned && !(await checkIsAdmin(ctx))) {
-				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated" })
+				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated to query banned tweets" })
 			}
 			// first, filter by posts sent to the user. Sometimes, a post is sent but never seen. When this list is empty, consult the viewed posts list.
 			const unsentTweets = await queryRandomTweets(ctx.Tweet, ctx.User, 
@@ -81,7 +83,7 @@ export const router = t.router({
 		.input(z.object({
 			tweetFilter: zTweetSchema.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
 			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
-			page: z.number().min(1).default(1),
+			page: z.number().min(0).default(1),
 			pageSize: z.number().max(100).min(1).default(20)
 		}))
 		.output(z.array(zTweetSchema))
@@ -103,7 +105,7 @@ export const router = t.router({
 					{ $sort: Object.keys(input.tweetSorter).length == 0 ? { date_time: 1 } : input.tweetSorter }, // Cover the case of {}. Maintain default in validation for documentation
 					{
 						$facet: {
-							data: [{ $skip: (input.page - 1) * input.pageSize }, { $limit: input.pageSize }]
+							data: [{ $skip: (input.page) * input.pageSize }, { $limit: input.pageSize }]
 						}
 					}
 				]).toArray()) as { data: TweetSchema[] }[])[0].data

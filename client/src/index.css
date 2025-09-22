@@ -106,8 +106,9 @@
 
 .radio-option {
   @apply
-    w-100
-    rounded-md p-2 bg-black/10
+    block
+    w-full
+    rounded-md p-2 bg-black/5
     hover:cursor-pointer
     hover:data-disabled:cursor-default
     hover:bg-cyan-light/50
