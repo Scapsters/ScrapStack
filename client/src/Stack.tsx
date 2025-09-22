@@ -20,7 +20,7 @@ export function Stack() {
     const [params] = useSearchParams()
     const entryTweet = useRef(params.get("tweet_id"))
 
-    const { userToken, adminSecret } = useContext(userContext)
+    const { userToken, setUserToken } = useContext(userContext)
 
     const [searchFilter, setSearchFilter] = useState<Partial<TweetSchema> | null>(null)
     const [searchSorter, setSearchSorter] = useState<Partial<Record<keyof TweetSchema, 1 | -1>> | null>(null)
@@ -64,6 +64,21 @@ export function Stack() {
     const [sortBy, setSortBy] = useState("Default")
     const [sortDirection, setSortDirection] = useState<1 | -1>(1)
 
+    const submitForm = useCallback(() => {
+        const formData = getValues()
+        setSearchFilter({
+            content: formData.content,
+            handle: formData.handle,
+            tagSet: [{ owner: userToken ?? "", tags: formData.tags.split(",") }]
+        })
+        setSearchSorter(sortBy == "Default"
+            ? {}
+            : sortBy == "DatePosted"
+                ? { date_time: sortDirection }
+                : {}
+        )
+    }, [getValues, sortBy, sortDirection, userToken])
+
     return (
         <div>
             <ScrollAwareTopBar centerText={centerText} />
@@ -88,14 +103,10 @@ export function Stack() {
                         <RadioGroup
                             value={sortBy}
                             onChange={setSortBy}
-                            className="m-1 px-3 py-1.5"
+                            className="m-1 px-3 py-1.5 flex flex-col"
                         >
-                            <Field className="m-1">
-                                <Radio value={"DatePosted"} className="radio-option"> Date Posted </Radio>
-                            </Field>
-                            <Field className="mt-5 m-1">
-                                <Radio value={"Default"} className="radio-option"> Default </Radio>
-                            </Field>
+                            <Field className="m-1 w-100"> <Radio value={"DatePosted"} className="radio-option"> Date Posted </Radio> </Field>
+                            <Field className="mt-5 m-1"> <Radio value={"Default"} className="radio-option"> Default </Radio> </Field>
                         </RadioGroup>
                         <RadioGroup
                             value={sortDirection}
@@ -103,35 +114,21 @@ export function Stack() {
                             className="m-1 px-3 py-1.5"
                             disabled={sortBy === "Default"}
                         >
-                            <Field className="m-1">
-                                <Radio value={1} className="radio-option"> Ascending </Radio>
-                            </Field>
-                            <Field className="mt-5 m-1">
-                                <Radio value={-1} className="radio-option"> Descending </Radio>
-                            </Field>
+                            <Field className="m-1"> <Radio value={1} className="radio-option"> Ascending </Radio> </Field>
+                            <Field className="mt-5 m-1"> <Radio value={-1} className="radio-option"> Descending </Radio> </Field>
                         </RadioGroup>
                     </div>
                 </div>
                 <div className="flex justify-center w-full mb-4">
                     <button
                         className="button"
-                        onClick={() => {
-                            const formData = getValues()
-                            setSearchFilter({
-                                content: formData.content,
-                                handle: formData.handle,
-                                tagSet: [{ owner: userToken ?? "", tags: formData.tags.split(",") }]
-                            })
-                            setSearchSorter(sortBy == "Default"
-                                ? {}
-                                : sortBy == "DatePosted"
-                                    ? { date_time: sortDirection }
-                                    : {}
-                            )
-                        }}
+                        onClick={submitForm}
                     >
                         Search
                     </button>
+                </div>
+                <div>
+
                 </div>
             </SideBar>
             <div className="flex justify-center pt-4">

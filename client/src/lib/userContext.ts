@@ -1,9 +1,8 @@
-import { createContext } from "react"
+import { createContext, type SetStateAction } from "react"
 
 export const userContext = createContext<{
-    userToken: string | null
-    adminSecret: string | null
-}>({
-    userToken: null,
-    adminSecret: null
-})
+    userToken?: string
+    setUserToken?: React.Dispatch<SetStateAction<string>>
+    adminSecret?: string
+    setAdminSecret?: React.Dispatch<SetStateAction<string>>
+}>({})

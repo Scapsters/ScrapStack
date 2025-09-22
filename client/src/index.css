@@ -97,7 +97,7 @@
 }
 
 .input {
-  @apply text-sm/6 text-black rounded-md border-none bg-black/5 focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25
+  @apply text-sm/6 text-black rounded-md bg-black/5 focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25
 }
 
 .label {
@@ -105,15 +105,16 @@
 }
 
 .radio-option {
-  @apply 
-    rounded-md p-2
+  @apply
+    w-100
+    rounded-md p-2 bg-black/10
     hover:cursor-pointer
     hover:data-disabled:cursor-default
     hover:bg-cyan-light/50
     data-checked:bg-cyan-light
     data-disabled:text-black/50
-    data-disabled:bg-black/10 
-    data-checked:data-disabled:bg-black/20
+    data-disabled:bg-black/20 
+    data-checked:data-disabled:bg-black/40
 }
 
 .square {
