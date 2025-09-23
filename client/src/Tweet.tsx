@@ -1,29 +1,42 @@
-import { useContext, useEffect, useMemo, useRef } from "react"
+import { useContext, useEffect, useMemo, useRef, useState } from "react"
 import { useIsVisible, usePromise, useTweet } from "./lib/tweetHooks"
 import type { TweetWithURLs } from "./lib/tweetQueue"
 import { userContext } from "./lib/userContext"
 import { ConfirmActionButton, CopyButton } from "./components/ConfirmActionButton"
 import { trpcClient } from "./trpc"
-import { GoHeart, GoPlus, GoSearch, GoTrash } from "react-icons/go"
+import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from "react-icons/go"
 import { defaultSearchValues } from "./Stack"
+import { Link } from "react-router-dom"
 
 export function TweetBatch({ batchPromise, view, openSearchWith }: { batchPromise: Promise<TweetWithURLs[]>, view: () => void, openSearchWith: (values: typeof defaultSearchValues) => void }) {
     const [batch, isBatchLoading] = usePromise(batchPromise, [])
-    if (isBatchLoading) return <div className="h-80">Tweet Data Loading</div>
+    if (isBatchLoading) return (
+        <div className="h-80 flex flex-col items-center gap-6">
+            Scrap Data Loading...
+            <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
+        </div>
+    )
     return batch.map((tweetWithURLs) => <Tweet tweetWithURLs={tweetWithURLs} view={view} key={tweetWithURLs.data.tweet_id} openSearchWith={openSearchWith}></Tweet>)
 }
 
 function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWithURLs; view: () => void, openSearchWith: (values: typeof defaultSearchValues) => void }) {
     const [images, areUrlsLoading, markAsViewed] = useTweet(tweetWithURLs)
     const tweet = tweetWithURLs.data
-    const visiblityRef = useRef(null)
+    const [visiblityRef, setVisibilityRef] = useState<HTMLElement | null>(null)
     const [isVisible, removeListener] = useIsVisible(visiblityRef)
     const viewed = useRef(false)
     const linkToCopy = useMemo(() => {
         const url = new URL(location.href)
+        url.search = ""
         url.searchParams.set("tweet_id", tweet.tweet_id)
         return url.toString()
     }, [tweet.tweet_id])
+    const linkToSearch = useMemo(() => {
+        const url = new URL(location.href)
+        url.search = ""
+        url.searchParams.set("handle", tweet.handle)
+        return url.search
+    }, [tweet.handle])
 
     useEffect(() => {
         if (isVisible && !viewed.current) {
@@ -36,10 +49,15 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
 
     const { adminSecret } = useContext(userContext)
 
-    if (areUrlsLoading) return <div className="h-80"> "Loading images" </div>
+    if (areUrlsLoading) return (
+        <div className="h-80 flex flex-col items-center gap-6">
+            Images Loading...
+            <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
+        </div>
+    )
 
     return (
-        <div ref={visiblityRef} className="border-b-1 border-black/10 w-full pb-5">
+        <div ref={setVisibilityRef} className="border-b-1 border-black/10 w-full pb-5">
             <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-4">
                     <a href={tweet.tweet_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-2 border-2 border-transparent px-6 bg-white/40 rounded-md w-fit hover:bg-black/5 hover:border-2 hover:border-cyan">
@@ -69,12 +87,13 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
                         </ConfirmActionButton>
                     }
                     <div className="flex gap-8 p-1">
-                        <button
+                        <Link
+                            to={linkToSearch}
                             onClick={() => openSearchWith({ ...defaultSearchValues, handle: tweet.handle })}
                             className="button"
                         >
                             <GoSearch size={28} />
-                        </button>
+                        </Link>
                         <button
                             onClick={() => {
 

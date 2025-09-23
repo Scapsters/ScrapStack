@@ -36,19 +36,19 @@ export function usePromise<T>(promise: Promise<T>, defaultValue: T | null) {
 }
 
 // https://dev.to/bcncodeschool/detecting-if-an-element-is-in-view-with-react-5b60
-export function useIsVisible(ref: React.RefObject<HTMLElement | null>): [boolean, () => void] {
+export function useIsVisible(ref: HTMLElement | null) {
     const [isIntersecting, setIntersecting] = useState(false)
     const observerRef = useRef<IntersectionObserver | null>(null)
 
     useEffect(() => {
-        if (!ref.current)
+        if (!ref)
 			return
 
         const observer = new IntersectionObserver(([entry]) => {
             setIntersecting(entry.isIntersecting)
         })
 
-        observer.observe(ref.current)
+        observer.observe(ref)
         observerRef.current = observer
 
         return () => {
@@ -62,5 +62,5 @@ export function useIsVisible(ref: React.RefObject<HTMLElement | null>): [boolean
         observerRef.current = null
     }
 
-    return [isIntersecting, removeListener]
+    return [isIntersecting, removeListener] as const
 }

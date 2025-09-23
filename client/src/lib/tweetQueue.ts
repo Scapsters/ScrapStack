@@ -10,6 +10,7 @@ export type TweetWithURLs = {
 
 export function useTweetQueue(getNextTweet: (batchIndex: number) => TweetQuery, firstTweet?: () => TweetQuery) {
     const [batches, setBatches] = useState<Promise<TweetWithURLs[]>[]>([])
+    const [isLoading, setIsLoading] = useState(false)
 
     const maxLead = 2
     const batchSize = 20 //TODO: make is not hardcode
@@ -33,21 +34,25 @@ export function useTweetQueue(getNextTweet: (batchIndex: number) => TweetQuery, 
     }, [])
 
     const fillQueue = useCallback(async () => {
+        
         if (firstTweet) {
+            setIsLoading(true)
             const firstBatch = extract(firstTweet())
             setBatches(batches => [...batches, firstBatch])
             await firstBatch
+            setIsLoading(false)
         }
 
         const totalBatchesViewed = Math.floor(tweetsViewed.current / batchSize)
         const batchesLeft = totalBatches.current - totalBatchesViewed
         const batchesToGet = maxLead - batchesLeft
+        console.log(totalBatchesViewed, batchesLeft, batchesToGet)
         for (let i = 0; i < batchesToGet; i++) {
-            console.log("before", totalBatches.current)
+            if (i == 0) setIsLoading(true) // Others have already loaded
             const nextBatch = extract(getNextTweet(totalBatches.current))
-            console.log("im batching it")
             setBatches(batches => [...batches, nextBatch])
             await nextBatch
+            if (i == 0) setIsLoading(false)
             totalBatches.current++
         }
     }, [extract, firstTweet, getNextTweet])
@@ -58,12 +63,12 @@ export function useTweetQueue(getNextTweet: (batchIndex: number) => TweetQuery, 
     }, [fillQueue])
 
     useEffect(() => {
-        window.scrollY = 0
+        window.scrollTo({ top: 0 })
         setBatches([])
         tweetsViewed.current = 0
         totalBatches.current = 0
         fillQueue()
     }, [fillQueue])
 
-    return [batches, view] as const
+    return [batches, view, isLoading] as const
 }

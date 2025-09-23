@@ -83,7 +83,7 @@ export const router = t.router({
 		.input(z.object({
 			tweetFilter: zTweetSchema.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
 			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
-			page: z.number().min(0).default(1),
+			page: z.number().min(0).default(0),
 			pageSize: z.number().max(100).min(1).default(20)
 		}))
 		.output(z.array(zTweetSchema))

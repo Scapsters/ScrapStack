@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
-export function TopBar({ centerText }: { centerText?: string }) {
+export function TopBar({ centerText, className }: { centerText?: string, className?: string }) {
     return (
-        <div className="bg-cyan border-b-10 border-b-cyan-light h-20 text-light">
+        <div className={`bg-cyan border-b-10 border-b-cyan-light h-20 text-light ${className}`}>
             <div className="flex justify-between items-center px-5 sm:px-10 h-full">
                 <>
                     <Link className="text-lg sm:text-2xl hover:underline cursor-pointer" to="/">
@@ -28,11 +28,11 @@ export function ScrollAwareTopBar({ centerText }: { centerText?: string }) {
     useEffect(() => {
         if (typeof window == 'undefined') return
         const handleScroll = () => {
+
             if (!bar.current) return
 
             lastScroll.current = currentScroll.current
             currentScroll.current = window.scrollY
-
             const deltaScroll = currentScroll.current - lastScroll.current
                 setYOffset(prevOffset => 
                     Math.max(-160,
