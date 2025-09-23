@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from "react"
+import { useContext, useEffect, useMemo, useRef } from "react"
 import { useIsVisible, usePromise, useTweet } from "./lib/tweetHooks"
 import type { TweetWithURLs } from "./lib/tweetQueue"
 import { userContext } from "./lib/userContext"
@@ -19,6 +19,11 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
     const visiblityRef = useRef(null)
     const [isVisible, removeListener] = useIsVisible(visiblityRef)
     const viewed = useRef(false)
+    const linkToCopy = useMemo(() => {
+        const url = new URL(location.href)
+        url.searchParams.set("tweet_id", tweet.tweet_id)
+        return url.toString()
+    }, [tweet.tweet_id])
 
     useEffect(() => {
         if (isVisible && !viewed.current) {
@@ -86,7 +91,7 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
                         >
                             <GoHeart size={28} />
                         </button>
-                        <CopyButton size={28} textToCopy={window.location.origin + window.location.pathname + "?tweet_id=" + tweet.tweet_id} />
+                        <CopyButton size={28} textToCopy={linkToCopy} />
                     </div>
                 </div>
             </div>

@@ -1,5 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import type { TweetSchema } from '../../api/source/api/schemas'
+import { useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { trpcClient } from './trpc'
 import { useTweetQueue } from './lib/tweetQueue'
 import { useLocation, useSearchParams } from 'react-router-dom'
@@ -10,6 +9,7 @@ import { Field, Input, Label, Radio, RadioGroup } from '@headlessui/react'
 import { TweetBatch } from './Tweet'
 import { userContext } from './lib/userContext'
 import { SecureField } from './components/SecureField'
+import type { TweetSchema } from '../../api/source/api/schemas'
 
 export const defaultSearchValues = {
     content: "",
@@ -22,76 +22,67 @@ export function Stack() {
     const username = useMemo(() => location.pathname.split('/').pop() ?? '', [location])
     const centerText = `${username}${username.endsWith('s') ? "'" : "'s"} Stack`
 
-    const [params] = useSearchParams()
+    const [params, setParams] = useSearchParams()
     const entryTweet = useRef(params.get("tweet_id"))
+    const searchFilter = useMemo(() => ({
+            content: params.get("content") || undefined,
+            handle: params.get("handle") || undefined,
+            tags: params.get("tags") || undefined,
+    }), [params])
+    const searchSorter = useMemo(() => {
+        const sortByParam = params.get("sort_by") || "Default" satisfies keyof TweetSchema | "Default"
+        const sortDirectionParam = parseInt(params.get("sort_direction") ?? "")
+        return sortByParam != "Default" && sortDirectionParam
+            ? { [sortByParam]: sortDirectionParam }
+            : undefined
+    }, [params])
 
     const { userToken, setUserToken, adminSecret, setAdminSecret } = useContext(userContext)
 
-    const [searchFilter, setSearchFilter] = useState<Partial<TweetSchema> | null>(null)
-    const [searchSorter, setSearchSorter] = useState<Partial<Record<keyof TweetSchema, 1 | -1>> | null>(null)
-
-    const defaultQuery = useCallback(() => trpcClient.getRandomUnviewedTweets.query({ stackUsername: username }), [username])
-    const [batches, view, setQueue] = useTweetQueue()
-
-    useEffect(() => {
-        setQueue(
-            defaultQuery,
-            entryTweet.current
-                ? () => trpcClient.getTweets.query({ tweetFilter: { tweet_id: entryTweet.current ?? undefined } })
-                : defaultQuery
-        )
-    }, [defaultQuery, setQueue])
-
-    useEffect(() => {
-        if (searchFilter || searchSorter) {
-            setQueue((batchIndex: number) =>
-                trpcClient.getTweets.query({
-                    tweetFilter: { stackUsername: username, ...searchFilter },
-                    tweetSorter: searchSorter ?? undefined,
-                    page: batchIndex
-                })
-            )
+    const getNextTweet = useCallback((batchIndex: number) => {
+        if (
+            Object.values(searchFilter).some(item => item !== undefined)
+            || searchSorter
+        ) {
+            return trpcClient.getTweets.query({
+                tweetFilter: { stackUsername: username, ...searchFilter },
+                tweetSorter: searchSorter,
+                page: batchIndex
+            })
         } else {
-            setQueue(defaultQuery)
+            return trpcClient.getRandomUnviewedTweets.query({ stackUsername: username })
         }
-    }, [defaultQuery, entryTweet, searchFilter, searchSorter, setQueue, username])
+    }, [searchFilter, searchSorter, username])
+    const getEntryTweet = useMemo(() => 
+        entryTweet.current 
+            ? (() => trpcClient.getTweets.query({ tweetFilter: { tweet_id: entryTweet.current ?? undefined } }))
+            : undefined
+    , [])
+    const [batches, view] = useTweetQueue(getNextTweet, getEntryTweet)
 
-    
     const {
-        getValues,
-        register,
-        setValue
-    } = useForm({ defaultValues: defaultSearchValues })
-    const [sortBy, setSortBy] = useState("Default")
-    const [sortDirection, setSortDirection] = useState<1 | -1>(1)
+        getValues: getFormValues,
+        reset: resetForm,
+        register
+    } = useForm<typeof defaultSearchValues>({ defaultValues: searchFilter })
+    const [formSortBy, setFormSortBy] = useState<keyof TweetSchema | "Default">("Default")
+    const [formSortDirection, setFormSortDirection] = useState<1 | -1>(1)
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const openSearchWith = useCallback((values: typeof defaultSearchValues) => {
-        setValue("content", values.content)
-        setValue("handle", values.handle)
-        setValue("tags", values.tags)
+        setParams(values)
+        resetForm(values)
         setIsSettingsOpen(true)
-    }, [setValue])
+    }, [resetForm, setParams])
 
     const submitForm = useCallback(() => {
-        const formData = getValues()
-        if (!formData.content && !formData.handle && !formData.tags && sortBy == "Default") {
-            setSearchFilter(null)
-            setSearchSorter(null)
-        } else {
-            setSearchFilter({
-                content: formData.content || undefined,
-                handle: formData.handle || undefined,
-                tagSet: formData.tags ? [{ owner: userToken ?? "", tags: formData.tags.split(",") }] : undefined
-            })
-            setSearchSorter(sortBy == "Default"
-                ? {}
-                : sortBy == "DatePosted"
-                    ? { date_time: sortDirection }
-                    : {}
-            )
-        }
-    }, [getValues, sortBy, sortDirection, userToken])
+        const formData = getFormValues()
+        setParams({
+            ...formData,
+            sort_by: formSortBy,
+            sort_direction: String(formSortDirection)
+        })
+    }, [formSortBy, formSortDirection, getFormValues, setParams])
 
     const tweetBatches = useMemo(() => batches.map((batch, index) => (
         <TweetBatch key={index} batchPromise={batch} view={view} openSearchWith={openSearchWith}></TweetBatch>
@@ -99,7 +90,7 @@ export function Stack() {
 
     if (!setUserToken || !setAdminSecret || !userToken) return (
         <div className="w-full text-center mt-10">
-            Context Loading...
+            Context Loading... This shouldn't happen, please clear your browsers cache, cookies, and local storage if the issue persists.
         </div>
     )
 
@@ -125,18 +116,18 @@ export function Stack() {
                     <p className="font-bold text-cyan-dark text-lg mt-6">Sort</p>
                     <div className="flex justify-around mr-6 w-full text-center">
                         <RadioGroup
-                            value={sortBy}
-                            onChange={setSortBy}
+                            value={formSortBy}
+                            onChange={setFormSortBy}
                             className="m-1 px-3 py-1.5 flex flex-col"
                         >
                             <Field className="m-1"> <Radio value={"DatePosted"} className="radio-option"> Date Posted </Radio> </Field>
                             <Field className="mt-3 m-1"> <Radio value={"Default"} className="radio-option"> Default </Radio> </Field>
                         </RadioGroup>
                         <RadioGroup
-                            value={sortDirection}
-                            onChange={setSortDirection}
+                            value={formSortDirection}
+                            onChange={setFormSortDirection}
                             className="m-1 px-3 py-1.5 flex flex-col"
-                            disabled={sortBy === "Default"}
+                            disabled={!formSortBy}
                         >
                             <Field className="m-1"> <Radio value={1} className="radio-option"> Ascending </Radio> </Field>
                             <Field className="mt-3 m-1"> <Radio value={-1} className="radio-option"> Descending </Radio> </Field>
