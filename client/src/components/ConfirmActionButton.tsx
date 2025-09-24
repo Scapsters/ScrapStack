@@ -1,11 +1,12 @@
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react"
+import { TRPCClientError } from "@trpc/client"
 import { useCallback, useRef, useState, type ReactNode } from "react"
 import { GoCheck, GoCopy, GoX } from "react-icons/go"
 
 export function ConfirmActionButton({ onClick, successMessage, failureMessage, requireConfirmation, children, ...props }: {
-    onClick: () => Promise<boolean>,
-    successMessage: string,
-    failureMessage: string,
+    onClick: () => Promise<[boolean, string?]>,
+    successMessage?: string,
+    failureMessage?: string,
     requireConfirmation?: boolean,
     children: ReactNode,
 } & React.HtmlHTMLAttributes<HTMLElement>
@@ -30,23 +31,23 @@ export function ConfirmActionButton({ onClick, successMessage, failureMessage, r
                     )
                 else resolve(true)
             }).then((doContinue) => {
+                const closeLater = () => {
+                    closingTimeout.current = setTimeout(() => {
+                        isTakingAction.current = false
+                        close()
+                    }, 800)
+                }
                 if (!doContinue) {
                     setStatus("Action cancelled.")
-                    closingTimeout.current = setTimeout(() => {
-                        close()
-                        isTakingAction.current = false
-                    }, 800)
+                    closeLater()
                 } else {
                     setStatus("Loading...")
                     onClick().then(ok => {
-                        setStatus(ok ? successMessage : failureMessage)
-                        if (ok)
-                            closingTimeout.current = setTimeout(() => {
-                                close()
-                                isTakingAction.current = false
-                            }, 800)
-                        else
-                            isTakingAction.current = false
+                        setStatus(ok ? successMessage || "Success!" : failureMessage || "Failure.")
+                        closeLater()
+                    }).catch(err => {
+                        if (err instanceof TRPCClientError) setStatus(err.message)
+                        else setStatus(err)
                     })
                 }
             })
@@ -61,7 +62,10 @@ export function ConfirmActionButton({ onClick, successMessage, failureMessage, r
                     <PopoverButton
                         className={"button data-active:bg-cyan-light!"}
                         onClick={() => {
-                            if (closingTimeout.current) clearTimeout(closingTimeout.current)
+                            isTakingAction.current = false
+                            if (closingTimeout.current) {
+                                clearTimeout(closingTimeout.current)
+                            }
                         }}
                     >
                         {children}
@@ -71,19 +75,19 @@ export function ConfirmActionButton({ onClick, successMessage, failureMessage, r
                             if (open && !isTakingAction.current) takeAction(close)
                             return (
                                 <div className="flex flex-col items-center mb-1">
-                                    <div className="p-2 px-6 w-max bg-white rounded-md border-2 border-cyan-dark z-30">{status}</div>
-                                    <div className="relative z-30">
-                                        <div className="top-1 w-0 h-0 z-20
+                                    <div className="p-2 px-6 w-max bg-white rounded-md border-2 border-cyan-dark z-14">{status}</div>
+                                    <div className="relative z-14">
+                                        <div className="top-1 w-0 h-0 z-12
                                             border-l-10 border-l-transparent
                                             border-t-10 border-t-transparent
                                             border-r-10 border-r-transparent">
                                         </div>
-                                        <div className="absolute -left-[2px] -top-[1px] w-0 h-0 z-20 
+                                        <div className="absolute -left-[2px] -top-[1px] w-0 h-0 z-12
                                             border-l-12 border-l-transparent
                                             border-t-12 border-t-cyan-dark
                                             border-r-12 border-r-transparent">
                                         </div>
-                                        <div className="absolute -top-0.5 w-0 h-0 z-20 
+                                        <div className="absolute -top-0.5 w-0 h-0 z-12
                                             border-l-10 border-l-transparent
                                             border-t-10 border-t-white
                                             border-r-10 border-r-transparent">
@@ -107,7 +111,7 @@ export function CopyButton({ size, textToCopy, ...props }: { size: number, textT
             failureMessage='Unable to copy. Check browser permissions.'
             onClick={async () => {
                 await navigator.clipboard.writeText(textToCopy)
-                return true
+                return [true] satisfies [boolean]
             }}
         ><GoCopy size={size} className="text-black active:stroke-black" />
         </ConfirmActionButton>

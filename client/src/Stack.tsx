@@ -6,7 +6,6 @@ import { ScrollAwareTopBar, TopBar } from './components/TopBar'
 import { SideBar } from './components/Sidebar'
 import { useForm } from 'react-hook-form'
 import { Field, Input, Label, Radio, RadioGroup } from '@headlessui/react'
-import { TweetBatch } from './Tweet'
 import { userContext } from './lib/userContext'
 import { SecureField } from './components/SecureField'
 import type { TweetSchema } from '../../api/source/api/schemas'
@@ -42,11 +41,9 @@ export function Stack() {
     }, [params])
 
     // Queue stuff
+    const isQueryingRandom = Object.values(searchFilter).every(item => item === undefined) && !searchSorter
     const getNextTweet = useCallback((batchIndex: number) => {
-        if (
-            Object.values(searchFilter).some(item => item !== undefined)
-            || searchSorter
-        ) {
+        if (!isQueryingRandom) {
             return trpcClient.getTweets.query({
                 tweetFilter: { stackUsername: username, ...searchFilter },
                 tweetSorter: searchSorter,
@@ -55,13 +52,12 @@ export function Stack() {
         } else {
             return trpcClient.getRandomUnviewedTweets.query({ stackUsername: username })
         }
-    }, [searchFilter, searchSorter, username])
+    }, [isQueryingRandom, searchFilter, searchSorter, username])
     const getEntryTweet = useMemo(() => 
         entryTweet
             ? (() => trpcClient.getTweets.query({ tweetFilter: { tweet_id: entryTweet ?? undefined } }))
             : undefined
     , [entryTweet])
-    const [batches, view, isLoading] = useTweetQueue(getNextTweet, getEntryTweet)
 
     // Form stuff
     const {
@@ -89,9 +85,7 @@ export function Stack() {
         })
     }, [formSortBy, formSortDirection, getFormValues, setParams])
 
-    const tweetBatches = useMemo(() => batches.map((batch, index) => (
-        <TweetBatch key={index} batchPromise={batch} view={view} openSearchWith={openSearchWith}></TweetBatch>
-    )), [batches, openSearchWith, view])
+    const [tweetBatches, isLoading] = useTweetQueue(getNextTweet, openSearchWith, getEntryTweet, isQueryingRandom ? "Random" : undefined,)
 
     if (!setUserToken || !setAdminSecret || !userToken) return (
         <div className="w-full text-center mt-10">
@@ -116,7 +110,7 @@ export function Stack() {
                     </div>
                     <div className="flex flex-col gap-2 m-4">
                         <p className="font-bold text-cyan-dark text-lg">Search</p>
-                        <Field className="flex justify-between items-center">
+                        <Field className="hidden flex justify-between items-center">
                             <Label className="label h-min">Content</Label>
                             <Input placeholder="simple text search..." type="text" {...register('content')} className="m-1 px-3 py-1.5 input" />
                         </Field>
@@ -124,7 +118,7 @@ export function Stack() {
                             <Label className="label h-min">Artist Handle</Label>
                             <Input placeholder="@artist" type="text" {...register('handle')} className={`m-1 px-3 py-1.5 input transition-colors duration-100 ease-out ${handleStyle}`} />
                         </Field>
-                        <Field className="flex justify-between items-center">
+                        <Field className="hidden flex justify-between items-center">
                             <Label className="label h-min">Tags</Label>
                             <Input placeholder="tag1, tag2.." type="text" {...register('tags')} className="m-1 px-3 py-1.5 input" />
                         </Field>

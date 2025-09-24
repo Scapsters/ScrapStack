@@ -79,8 +79,8 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
                             failureMessage='Ban failed. Check authentication?' //TODO: better errors
                             successMessage='Post Banned.'
                             requireConfirmation
-                            onClick={() => {
-                                return trpcClient.banTweet.mutate(tweet)
+                            onClick={async () => {
+                                return [await trpcClient.banTweet.mutate(tweet)] satisfies [boolean]
                             }}
                         >
                             <GoTrash className="text-red-700" size={28} />
@@ -98,7 +98,7 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
                             onClick={() => {
 
                             }}
-                            className="button"
+                            className="hidden button"
                         >
                             <GoPlus size={28} />
                         </button>
@@ -106,7 +106,7 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
                             onClick={() => {
 
                             }}
-                            className="button"
+                            className="hidden button"
                         >
                             <GoHeart size={28} />
                         </button>
