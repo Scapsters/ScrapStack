@@ -85,8 +85,15 @@ export function Stack() {
         })
     }, [formSortBy, formSortDirection, getFormValues, setParams])
 
-    const [tweetBatches, isLoading] = useTweetQueue(getNextTweet, openSearchWith, getEntryTweet, isQueryingRandom ? "Random" : undefined,)
+    const [tweetBatches, isLoading] = useTweetQueue(
+        getNextTweet,
+        openSearchWith,
+        window.scrollY,
+        isQueryingRandom ? "Random" : JSON.stringify({ ...searchFilter, ...searchSorter }),
+        getEntryTweet
+    )
 
+    console.log(tweetBatches)
     if (!setUserToken || !setAdminSecret || !userToken) return (
         <div className="w-full text-center mt-10">
             Context Loading... This shouldn't happen, please clear your browsers cache, cookies, and local storage if the issue persists.

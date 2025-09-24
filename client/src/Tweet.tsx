@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { useIsVisible, usePromise, useTweet } from "./lib/tweetHooks"
 import type { TweetWithURLs } from "./lib/tweetQueue"
 import { userContext } from "./lib/userContext"
@@ -8,18 +8,47 @@ import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from "react-icons/go"
 import { defaultSearchValues } from "./Stack"
 import { Link } from "react-router-dom"
 
-export function TweetBatch({ batchPromise, view, openSearchWith }: { batchPromise: Promise<TweetWithURLs[]>, view: () => void, openSearchWith: (values: typeof defaultSearchValues) => void }) {
+export function TweetBatch({ batchPromise, view, openSearchWith, setOwnHeight }: { 
+    batchPromise: Promise<TweetWithURLs[]>,
+    view: () => void,
+    openSearchWith: (values: typeof defaultSearchValues) => void,
+    setOwnHeight: (height: number) => void
+}) {
     const [batch, isBatchLoading] = usePromise(batchPromise, [])
+    const ref = useRef<HTMLDivElement>(null)
+    const [loadedChildren, setLoadedChildren] = useState(0)
+    console.log("loadedHCile")
+    if (loadedChildren == batch.length) {
+        console.log("wogo")
+        const current = ref.current
+        if (!current) console.warn("Unable to set height, ref undefined.")
+        else setOwnHeight(current.getBoundingClientRect().height)
+    }
+    const load = useCallback(() => setLoadedChildren(c => c + 1), [])
     if (isBatchLoading) return (
         <div className="h-80 flex flex-col items-center gap-6">
             Scrap Data Loading...
             <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
         </div>
     )
-    return batch.map((tweetWithURLs) => <Tweet tweetWithURLs={tweetWithURLs} view={view} key={tweetWithURLs.data.tweet_id} openSearchWith={openSearchWith}></Tweet>)
+    return <div ref={ref}>
+        {batch.map((tweetWithURLs) => 
+            <Tweet 
+                tweetWithURLs={tweetWithURLs}
+                view={view} key={tweetWithURLs.data.tweet_id}
+                openSearchWith={openSearchWith}
+                load={load}
+            />
+        )}
+    </div>
 }
 
-function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWithURLs; view: () => void, openSearchWith: (values: typeof defaultSearchValues) => void }) {
+function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
+    tweetWithURLs: TweetWithURLs
+    view: () => void
+    openSearchWith: (values: typeof defaultSearchValues) => void
+    load: () => void
+}) {
     const [images, areUrlsLoading, markAsViewed] = useTweet(tweetWithURLs)
     const tweet = tweetWithURLs.data
     const [visiblityRef, setVisibilityRef] = useState<HTMLElement | null>(null)
@@ -48,6 +77,10 @@ function Tweet({ tweetWithURLs, view, openSearchWith }: { tweetWithURLs: TweetWi
     }, [isVisible, markAsViewed, view, removeListener])
 
     const { adminSecret } = useContext(userContext)
+
+    useEffect(() => {
+        if (!areUrlsLoading) load()
+    }, [areUrlsLoading, load])
 
     if (areUrlsLoading) return (
         <div className="h-80 flex flex-col items-center gap-6">
