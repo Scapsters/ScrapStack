@@ -18,14 +18,15 @@ export function useTweetQueue(
     queryName: string,
     firstTweet?: () => TweetQuery,
 ) {
-    const [batches, setBatches] = useState<JSX.Element[]>([])
     const [isLoading, setIsLoading] = useState(false)
-    const [getCache, setCache] = useCache()
+    const [cache, setCache] = useState<Cache>({
+        [queryName]: {
+            batches: [], heights: [], scrollHeight: 0, totalBatches: 0, tweetsViewed: 0
+        }
+    })
 
     const maxLead = 2
-    const batchSize = 20 //TODO: make is not hardcode
-    const totalBatches = useRef(0)
-    const tweetsViewed = useRef(0)
+    const batchSize = 5 //TODO: make is not hardcode
 
     const extract = useCallback(async (query: TweetQuery): Promise<TweetWithURLs[]> => {
         return query.then((tweets) =>
@@ -43,83 +44,79 @@ export function useTweetQueue(
         )
     }, [])
 
-    const fillQueue = useCallback(async () => {
-        const view = () => {
-            tweetsViewed.current++
-            fillQueue()
-        }
+    const view = useCallback(() => {
+        setCache(cache => ({
+            ...cache,
+            [queryName]: {
+                ...cache[queryName],
+                tweetsViewed: cache[queryName].tweetsViewed + 1
+            }
+        }))
+    }, [queryName])
 
-        const makeTweetBatches = (promises: Promise<TweetWithURLs[]>[]) => promises.map((batch, index) => {
-            const cache = getCache(queryName)
-            const setOwnHeight = (height: number) => { cache.heights[index] = height }
-            return <TweetBatch key={index} batchPromise={batch} view={view} openSearchWith={openSearchWith} setOwnHeight={setOwnHeight} />
-        })
-
-        if (firstTweet) {
-            setIsLoading(true)
-            const firstBatch = extract(firstTweet())
-            setBatches(batches => [...batches, ...makeTweetBatches([firstBatch])])
-            await firstBatch
-            setIsLoading(false)
-        }
-
-        const totalBatchesViewed = Math.floor(tweetsViewed.current / batchSize)
-        const batchesLeft = totalBatches.current - totalBatchesViewed
-        const batchesToGet = maxLead - batchesLeft
-        for (let i = 0; i < batchesToGet; i++) {
-            if (totalBatches.current == 0) setIsLoading(true)
-
-            const batchPromise = extract(getNextTweet(totalBatches.current))
-            const nextBatch = makeTweetBatches([batchPromise])
-            setBatches(batches => [...batches, ...nextBatch])
-            totalBatches.current++
-            const cache = getCache(queryName)
-            setCache(queryName, {
+    const makeTweetBatches = useCallback((promises: Promise<TweetWithURLs[]>[], batchIndex: number) => promises.map((batch, index) => {
+        const setOwnHeight = (height: number) => {
+            setCache(cache => ({
                 ...cache,
-                batches: [...cache.batches, ...nextBatch],
-                totalBatches: totalBatches.current,
-                tweetsViewed: tweetsViewed.current,
-            })
-
-            await batchPromise
-            setIsLoading(false)
+                [queryName]: {
+                    ...cache[queryName],
+                    heights: [
+                        ...cache[queryName].heights.slice(0, batchIndex),
+                        height,
+                        ...cache[queryName].heights.slice(batchIndex + 1)
+                    ]
+                }
+            }))
         }
-    }, [extract, firstTweet, getCache, getNextTweet, openSearchWith, queryName, setCache])
+        return <TweetBatch key={queryName + batchIndex + index} batchPromise={batch} view={view} openSearchWith={openSearchWith} setOwnHeight={setOwnHeight} />
+    }), [openSearchWith, queryName, view])
 
-    useEffect(() => {
-        const foundCache = getCache(queryName)
-        if (foundCache.batches.length > 0) {
-            console.log("setting", foundCache.scrollHeight)
-            setBatches(foundCache.batches)
-            tweetsViewed.current = foundCache.tweetsViewed
-            totalBatches.current = foundCache.totalBatches
-            window.scrollTo({ top: foundCache.scrollHeight })
-        } else {
-            setBatches([])
-            window.scrollTo({ top: 0 })
-        }
-        tweetsViewed.current = 0
-        totalBatches.current = 0
-        fillQueue()
-    }, [fillQueue, getCache, queryName])
-
-    const [visible, setVisible] = useState<JSX.Element[]>(() => virtualizeBatches(getCache(queryName), scrollTop))
+    const totalBatchesViewed = cache[queryName].tweetsViewed / batchSize
+    const batchesLeft = cache[queryName].totalBatches - totalBatchesViewed
+    const batchesToGet = maxLead - batchesLeft
+    console.log("queuenums", totalBatchesViewed, cache[queryName].totalBatches, batchesToGet)
+    
+    const currentBatches = cache[queryName].batches
+    for (let i = 0; i < batchesToGet; i++) {
+        if (cache[queryName].totalBatches == 0) setIsLoading(true)
+        const batchPromise = extract(getNextTweet(currentBatches.length - 1))
+        currentBatches.push(...makeTweetBatches([batchPromise], currentBatches.length - 1))
+        setIsLoading(false)
+    }
+    if (batchesToGet > 0) {
+        setCache(cache => ({
+            ...cache,
+            [queryName]: {
+                ...cache[queryName],
+                batches: currentBatches,
+                totalBatches: currentBatches.length,
+            }
+        }))
+    }
 
     const handleScroll = useCallback(throttle(() => {
-        const cache = getCache(queryName)
-        setCache(queryName, {
+        setCache(cache => ({
             ...cache,
-            scrollHeight: window.scrollY
-        })
-        setVisible(virtualizeBatches(getCache(queryName), scrollTop))
-    }, 2750), [getCache, setCache, setVisible])
-    
+            [queryName]: {
+                ...cache[queryName],
+                scrollHeight: window.scrollY
+            }
+        }))
+    }, 500), [setCache, cache])
+
     useEffect(() => {
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
-    }, [getCache, handleScroll, queryName, scrollTop, setCache])
+    }, [handleScroll])
 
-    return [virtualizeBatches(getCache(queryName), scrollTop), isLoading] as const
+    const debouncedVirtualized = useRef<ReturnType<typeof virtualizeBatches> | null>(null)
+    const lastTimeVirtualized = useRef(0)
+    if (Date.now() - lastTimeVirtualized.current > 500) {
+        debouncedVirtualized.current = virtualizeBatches(cache[queryName], scrollTop)
+        lastTimeVirtualized.current = Date.now()
+    }
+
+    return [debouncedVirtualized.current!, isLoading] as const // Always instantiated above
 }
 
 type Cache = {
@@ -132,45 +129,24 @@ type Cache = {
     }
 }
 
-function useCache() {
-    const cache = useRef<Cache>({})
-    const getCache = useCallback((queueName: string) => {
-        const foundCache = cache.current[queueName]
-        if (foundCache === undefined) {
-            cache.current[queueName] = {
-                batches: [],
-                tweetsViewed: 0,
-                totalBatches: 0,
-                scrollHeight: 0,
-                heights: []
-            }
-        }
-        return cache.current[queueName]
-    }, [])
-    const setCache = useCallback((queueName: string, info: Cache[string]) => {
-        cache.current[queueName] = info
-    }, [])
-    return [getCache, setCache] as const
-}
-
-function virtualizeBatches(cache: Cache[string], scrollTop: number) {
-    let targetHeight = 0
+function virtualizeBatches(cache?: Cache[string], scrollTop?: number) {
+    if (!cache || scrollTop == undefined) return []
     let totalHeight = 0
     let startIndex = 0
-
+    console.log(cache.heights)
     for (const height of cache.heights) {
-        console.log(totalHeight, scrollTop, totalHeight + height)
-        if (totalHeight + height < scrollTop + 2000) {
-            targetHeight += height
+        if (totalHeight + height < scrollTop - 500) {
             startIndex++
         }
         totalHeight += height
     }
 
-    const endIndex = Math.min(cache.batches.length, startIndex + 1)
+    const endIndex = Math.min(cache.batches.length, startIndex + 3)
+    console.log(startIndex)
     const visibleBatches = [
-        <div style={{ height: targetHeight + "px" }} key="spacer"></div>,
-        ...cache.batches.slice(startIndex, endIndex)
+        <div style={{ height: cache.heights.slice(0, startIndex).reduce((prev, curr) => prev + curr, 0) + "px" }} key="spacer top"></div>,
+        ...cache.batches.slice(startIndex, endIndex),
+        <div style={{ height: cache.heights.slice(endIndex).reduce((prev, curr) => prev + curr, 0) + "px" }} key="spacer bottom"></div>
     ]
 
     return visibleBatches

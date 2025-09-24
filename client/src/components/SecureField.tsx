@@ -4,9 +4,7 @@ import { useState, type SetStateAction } from "react"
 import { GoEye, GoEyeClosed } from "react-icons/go"
 
 export function SecureField({ name, placeholder, value, setValue }: { name: string, placeholder: string, value: string, setValue: React.Dispatch<SetStateAction<string>> }) {
-
     const [isRevealed, setIsRevealed] = useState(false)
-    console.log("field")
     return (
         <Field className="flex justify-between items-center">
             <Label className="label h-min grow text-left"> {name} </Label>

@@ -17,12 +17,16 @@ export function TweetBatch({ batchPromise, view, openSearchWith, setOwnHeight }:
     const [batch, isBatchLoading] = usePromise(batchPromise, [])
     const ref = useRef<HTMLDivElement>(null)
     const [loadedChildren, setLoadedChildren] = useState(0)
-    console.log("loadedHCile")
-    if (loadedChildren == batch.length) {
-        console.log("wogo")
+    const hasLoaded = useRef(false)
+    console.log("batch length", batch.length, loadedChildren)
+    if (loadedChildren >= batch.length) {
         const current = ref.current
         if (!current) console.warn("Unable to set height, ref undefined.")
-        else setOwnHeight(current.getBoundingClientRect().height)
+        else if (!hasLoaded.current) {
+            hasLoaded.current = true
+            console.log("IM LAODINGNGNGGG", current.getBoundingClientRect().height)
+            setOwnHeight(current.getBoundingClientRect().height)
+        }
     }
     const load = useCallback(() => setLoadedChildren(c => c + 1), [])
     if (isBatchLoading) return (
@@ -49,7 +53,8 @@ function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
     openSearchWith: (values: typeof defaultSearchValues) => void
     load: () => void
 }) {
-    const [images, areUrlsLoading, markAsViewed] = useTweet(tweetWithURLs)
+    const [loadedImages, setLoadedImages] = useState(0)
+    const [images, areUrlsLoading, markAsViewed] = useTweet(tweetWithURLs, () => setLoadedImages(i => i + 1))
     const tweet = tweetWithURLs.data
     const [visiblityRef, setVisibilityRef] = useState<HTMLElement | null>(null)
     const [isVisible, removeListener] = useIsVisible(visiblityRef)
@@ -78,19 +83,25 @@ function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
 
     const { adminSecret } = useContext(userContext)
 
+    
+    const hasLoaded = useRef(false)
     useEffect(() => {
-        if (!areUrlsLoading) load()
-    }, [areUrlsLoading, load])
+        if (hasLoaded.current || areUrlsLoading) return
+        if (loadedImages >= images.length) {
+            hasLoaded.current = true
+            load()
+        }
+    }, [areUrlsLoading, images.length, load, loadedImages])
 
     if (areUrlsLoading) return (
-        <div className="h-80 flex flex-col items-center gap-6">
+        <div key={tweetWithURLs.data.tweet_id} className="h-80 flex flex-col items-center gap-6">
             Images Loading...
             <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
         </div>
     )
 
     return (
-        <div ref={setVisibilityRef} className="border-b-1 border-black/10 w-full pb-5">
+        <div ref={setVisibilityRef} key={tweetWithURLs.data.tweet_id} className="border-b-1 border-black/10 w-full py-5">
             <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-4">
                     <a href={tweet.tweet_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-2 border-2 border-transparent px-6 bg-white/40 rounded-md w-fit hover:bg-black/5 hover:border-2 hover:border-cyan">
@@ -103,7 +114,7 @@ function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
                 </div>
                 <div className="w-4/5 text-center"> {tweet.content} </div>
                 <div className="flex gap-2 w-dvw justify-center items-center"> {
-                    images.map((image, index) => <div key={index}> {image} </div>)
+                    images
                 } </div>
                 <div className="w-full flex justify-center relative">
                     {adminSecret &&
