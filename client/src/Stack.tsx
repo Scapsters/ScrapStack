@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { trpcClient } from './trpc'
 import { useTweetQueue } from './lib/tweetQueue'
 import { useLocation, useSearchParams } from 'react-router-dom'
@@ -10,6 +10,7 @@ import { userContext } from './lib/userContext'
 import { SecureField } from './components/SecureField'
 import type { TweetSchema } from '../../api/source/api/schemas'
 import { GoSync } from 'react-icons/go'
+import useIsMobile from './lib/useIsMobile'
 
 export const defaultSearchValues = {
     content: "",
@@ -21,10 +22,11 @@ export function Stack() {
     const location = useLocation()
     const username = useMemo(() => location.pathname.split('/').pop() ?? '', [location])
     const centerText = `${username}${username.endsWith('s') ? "'" : "'s"} Stack`
+    const isMobile = useIsMobile()
 
     const { userToken, setUserToken, adminSecret, setAdminSecret } = useContext(userContext)
 
-    // Params stuff
+    // Params
     const [params, setParams] = useSearchParams()
     const entryTweet = useMemo(() => params.get("tweet_id"), [params])
     const searchFilter = useMemo(() => ({
@@ -39,8 +41,8 @@ export function Stack() {
             ? { [sortByParam]: sortDirectionParam }
             : undefined
     }, [params])
-
-    // Queue stuff
+    
+    // Queue
     const isQueryingRandom = Object.values(searchFilter).every(item => item === undefined) && !searchSorter
     const getNextTweet = useCallback((batchIndex: number) => {
         if (!isQueryingRandom) {
@@ -58,13 +60,14 @@ export function Stack() {
             ? (() => trpcClient.getTweets.query({ tweetFilter: { tweet_id: entryTweet ?? undefined } }))
             : undefined
     , [entryTweet])
+    const ref = useRef<HTMLDivElement>(null)
 
-    // Form stuff
+    // Form
     const {
         getValues: getFormValues,
         reset: resetForm,
         register
-    } = useForm<typeof defaultSearchValues>({ defaultValues: searchFilter })
+    } = useForm<typeof defaultSearchValues>({ defaultValues: { ...defaultSearchValues, ...searchFilter }})
     const [formSortBy, setFormSortBy] = useState<keyof TweetSchema | "Default">("Default")
     const [formSortDirection, setFormSortDirection] = useState<1 | -1>(1)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -72,10 +75,10 @@ export function Stack() {
     const openSearchWith = useCallback((values: typeof defaultSearchValues) => {
         setParams(values)
         resetForm(values)
-        setIsSettingsOpen(true)
+        //if (!isMobile) setIsSettingsOpen(true) // feels terrible on mobile
         setTimeout(() => setHandleStyle("bg-cyan-light!"), 300)
         setTimeout(() => setHandleStyle(""), 800)
-    }, [resetForm, setParams])
+    }, [isMobile, resetForm, setParams])
     const submitForm = useCallback(() => {
         const formData = getFormValues()
         setParams({
@@ -89,8 +92,9 @@ export function Stack() {
         getNextTweet,
         openSearchWith,
         window.scrollY,
-        isQueryingRandom ? "Random" : JSON.stringify({ ...searchFilter, ...searchSorter }),
-        getEntryTweet
+        CSS.escape(JSON.stringify({ ...searchFilter, ...searchSorter })),
+        ref,
+        getEntryTweet,
     )
 
     if (!setUserToken || !setAdminSecret || userToken === undefined) return (
@@ -100,9 +104,9 @@ export function Stack() {
             </div>
         </div>
     )
-
+    
     return (
-        <div>
+        <div ref={ref}>
             <ScrollAwareTopBar centerText={centerText} />
             <TopBar centerText={centerText} className={typeof window === "undefined" ? "visible" : "invisible"}/>
             <SideBar isOpen={isSettingsOpen} setIsOpen={setIsSettingsOpen}>
@@ -165,7 +169,7 @@ export function Stack() {
                 </div>
             </SideBar>
             <div className="flex justify-center pt-4">
-                <div className="flex flex-col items-center gap-5 w-275">
+                <div className="flex flex-col items-center gap-5 w-9/10 lg:w-275">
                     {tweetBatches}
                 </div>
             </div>

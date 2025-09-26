@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { useContext, useEffect, useMemo, useRef, useState } from "react"
 import { useIsVisible, usePromise, useTweet } from "./lib/tweetHooks"
 import type { TweetWithURLs } from "./lib/tweetQueue"
 import { userContext } from "./lib/userContext"
@@ -7,54 +7,61 @@ import { trpcClient } from "./trpc"
 import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from "react-icons/go"
 import { defaultSearchValues } from "./Stack"
 import { Link } from "react-router-dom"
+import throttle from "lodash/throttle"
 
-export function TweetBatch({ batchPromise, view, openSearchWith, setOwnHeight }: { 
+export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwnHeight, minHeight }: { 
     batchPromise: Promise<TweetWithURLs[]>,
-    view: () => void,
+    view: (key: string, isRepeat: boolean) => void,
+    dataKey: string
     openSearchWith: (values: typeof defaultSearchValues) => void,
-    setOwnHeight: (height: number) => void
+    setOwnHeight: (height: number) => void,
+    minHeight: number
 }) {
     const [batch, isBatchLoading] = usePromise(batchPromise, [])
     const ref = useRef<HTMLDivElement>(null)
-    const [loadedChildren, setLoadedChildren] = useState(0)
-    const hasLoaded = useRef(false)
-    console.log("batch length", batch.length, loadedChildren)
-    if (loadedChildren >= batch.length) {
-        const current = ref.current
-        if (!current) console.warn("Unable to set height, ref undefined.")
-        else if (!hasLoaded.current) {
-            hasLoaded.current = true
-            console.log("IM LAODINGNGNGGG", current.getBoundingClientRect().height)
-            setOwnHeight(current.getBoundingClientRect().height)
+    const [loadedChildren, setLoadedChildren] = useState(new Array<boolean>(batch.length).fill(false))
+    useEffect(() => {
+        if (loadedChildren.every(c => c)) {
+            const current = ref.current
+            if (current) {
+                const height = current.getBoundingClientRect().height
+                setOwnHeight(height)
         }
-    }
-    const load = useCallback(() => setLoadedChildren(c => c + 1), [])
+    }}, [batch.length, loadedChildren, setOwnHeight])
+
     if (isBatchLoading) return (
-        <div className="h-80 flex flex-col items-center gap-6">
+        <div className="hidden h-80 flex flex-col items-center gap-6">
             Scrap Data Loading...
             <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
         </div>
     )
-    return <div ref={ref}>
-        {batch.map((tweetWithURLs) => 
+    return <div ref={ref} className="w-full" style={{ minHeight: minHeight + "px" }}>
+        {batch.map((tweetWithURLs, index) => 
             <Tweet 
                 tweetWithURLs={tweetWithURLs}
-                view={view} key={tweetWithURLs.data.tweet_id}
+                dataKey={dataKey + index}
+                view={view} 
+                key={tweetWithURLs.data.tweet_id}
                 openSearchWith={openSearchWith}
-                load={load}
+                load={() => setLoadedChildren(c => [...c.slice(0, index), true, ...c.slice(index + 1)])}
             />
         )}
     </div>
 }
 
-function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
+function Tweet({ tweetWithURLs, dataKey, view, openSearchWith, load }: {
     tweetWithURLs: TweetWithURLs
-    view: () => void
+    dataKey: string
+    view: (key: string, isRepeat: boolean) => void
     openSearchWith: (values: typeof defaultSearchValues) => void
     load: () => void
 }) {
-    const [loadedImages, setLoadedImages] = useState(0)
-    const [images, areUrlsLoading, markAsViewed] = useTweet(tweetWithURLs, () => setLoadedImages(i => i + 1))
+    const [loadedImages, setLoadedImages] = useState(new Array<boolean>(tweetWithURLs.mediaUrlBlobs.length).fill(false))
+    const [images, areUrlsLoading, markAsViewed] = useTweet(tweetWithURLs, (imageIndex: number) => setLoadedImages(loaded => [
+        ...loaded.slice(0, imageIndex),
+        true,
+        ...loaded.slice(imageIndex + 1)
+    ]))
     const tweet = tweetWithURLs.data
     const [visiblityRef, setVisibilityRef] = useState<HTMLElement | null>(null)
     const [isVisible, removeListener] = useIsVisible(visiblityRef)
@@ -73,13 +80,18 @@ function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
     }, [tweet.handle])
 
     useEffect(() => {
+        if (areUrlsLoading) return
         if (isVisible && !viewed.current) {
-            removeListener()
             viewed.current = true
-            view()
+            view(dataKey, false)
             markAsViewed()
         }
-    }, [isVisible, markAsViewed, view, removeListener])
+        throttle(
+            () => view(dataKey, true),
+            100
+        )
+    }, [isVisible, markAsViewed, view, removeListener, dataKey, areUrlsLoading])
+
 
     const { adminSecret } = useContext(userContext)
 
@@ -87,7 +99,7 @@ function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
     const hasLoaded = useRef(false)
     useEffect(() => {
         if (hasLoaded.current || areUrlsLoading) return
-        if (loadedImages >= images.length) {
+        if (loadedImages.every(l => l)) {
             hasLoaded.current = true
             load()
         }
@@ -101,7 +113,7 @@ function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
     )
 
     return (
-        <div ref={setVisibilityRef} key={tweetWithURLs.data.tweet_id} className="border-b-1 border-black/10 w-full py-5">
+        <div ref={setVisibilityRef} data-key={dataKey} key={tweetWithURLs.data.tweet_id} className="border-b-1 border-black/10 w-auto py-5">
             <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-4">
                     <a href={tweet.tweet_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-2 border-2 border-transparent px-6 bg-white/40 rounded-md w-fit hover:bg-black/5 hover:border-2 hover:border-cyan">
@@ -113,7 +125,7 @@ function Tweet({ tweetWithURLs, view, openSearchWith, load }: {
                     </a>
                 </div>
                 <div className="w-4/5 text-center"> {tweet.content} </div>
-                <div className="flex gap-2 w-dvw justify-center items-center"> {
+                <div className="flex gap-2 w-[90dvw] justify-center items-center md:flex-nowrap flex-wrap"> {
                     images
                 } </div>
                 <div className="w-full flex justify-center relative">

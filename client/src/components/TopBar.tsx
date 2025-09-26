@@ -1,17 +1,24 @@
 import { useEffect, useRef, useState } from "react"
+import { GoSearch } from "react-icons/go"
 import { Link } from "react-router-dom"
 
 export function TopBar({ centerText, className }: { centerText?: string, className?: string }) {
     return (
         <div className={`bg-cyan border-b-10 border-b-cyan-light h-20 text-light ${className}`}>
-            <div className="flex justify-between items-center px-5 sm:px-10 h-full">
+            <div className="flex justify-between items-center px-5 sm:px-10 gap-2 h-full">
                 <>
-                    <Link className="text-lg sm:text-2xl hover:underline cursor-pointer" to="/">
+                    <Link className="text-lg sm:text-2xl button text-left hover:underline cursor-pointer" to="/">
+                        <img src="/favicon.ico" className="size-8"></img>
+                    </Link>
+                    <Link className="hidden md:block text-lg sm:text-2xl text-left hover:underline cursor-pointer" to="/">
                         Scrapstack
                     </Link>
-                    <p>{centerText}</p>
-                    <Link className="text-md sm:text-xl hover:underline cursor-pointer" to="/stacks">
-                        Search Stacks
+                    <p className="text-left md:text-center grow">{centerText}</p>
+                    <Link className="text-md button gap-2 text-right sm:text-xl hover:underline cursor-pointer flex" to="/stacks">
+                        <div className="flex gap-2 items-center">
+                            <GoSearch size={24}/>
+                            <p>Stacks</p>
+                        </div>
                     </Link>
                 </>
             </div>

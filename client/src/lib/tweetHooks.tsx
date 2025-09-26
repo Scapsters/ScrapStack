@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { TweetWithURLs } from "./tweetQueue"
 import { trpcClient } from "@/trpc"
+import Player from "@/components/Player"
 
-export const useTweet = (tweet: TweetWithURLs, onImageLoad: () => void): [React.ReactNode[], boolean, () => void] => {
+export const useTweet = (tweet: TweetWithURLs, onImageLoad: (imageIndex: number) => void): [React.ReactNode[], boolean, () => void] => {
     const mediaPromise = useMemo(() => Promise.all(tweet.mediaUrlBlobs), [tweet.mediaUrlBlobs])
     const [urls, areURLsLoading] = usePromise(mediaPromise, [])
     return [
-        urls.map((url) => url.includes("mp4")
-            ? <video key={url} src={url} onLoad={onImageLoad} className="rounded-lg border-1 border-black/10"></video>
-            : <img key={url} onLoad={onImageLoad} className="rounded-lg border-1 border-black/10" src={url}></img>),
+        urls.map((url, index) => url.includes("mp4") || url.includes("m3u8")
+            ? <Player key={url} src={url} onLoadedData={() => onImageLoad(index)} className="min-w-0 max-h-full rounded-lg border-1 border-black/10"></Player>
+            : <img key={url} onLoad={() => onImageLoad(index)} className="min-w-0 max-h-full rounded-lg border-1 border-black/10" src={url}></img>),
         areURLsLoading,
         () => trpcClient.markTweet.mutate([tweet.data])
     ]
@@ -39,15 +40,19 @@ export function usePromise<T>(promise: Promise<T>, defaultValue: T | null) {
 
 // https://dev.to/bcncodeschool/detecting-if-an-element-is-in-view-with-react-5b60
 export function useIsVisible(ref: HTMLElement | null) {
-    const [isIntersecting, setIntersecting] = useState(false)
+    const [isVisible, setIsVisible] = useState(false)
     const observerRef = useRef<IntersectionObserver | null>(null)
 
     useEffect(() => {
         if (!ref)
-			return
+            return
 
         const observer = new IntersectionObserver(([entry]) => {
-            setIntersecting(entry.isIntersecting)
+            setIsVisible(entry.isIntersecting)
+        }, {
+            root: null, // viewport
+            rootMargin: "-50% 0px -50% 0px", // leaves only a horizontal strip at mid-screen
+            threshold: 0, // trigger as soon as it touches that strip
         })
 
         observer.observe(ref)
@@ -64,5 +69,5 @@ export function useIsVisible(ref: HTMLElement | null) {
         observerRef.current = null
     }
 
-    return [isIntersecting, removeListener] as const
+    return [isVisible, removeListener] as const
 }
