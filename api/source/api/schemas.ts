@@ -25,6 +25,8 @@ export const zTweetSchema = z.object({
     media_url: z.array(z.string()),
     has_media: z.boolean(),
     profile_img: z.string(),
+    quote_tweet_text: z.string(),
+    quote_tweet_images: z.array(z.string()),
     isBanned: z.boolean(),
     tagSet: z.array(z.object({
         owner: z.string().describe("User.userToken"),

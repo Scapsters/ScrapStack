@@ -25,7 +25,8 @@ export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwn
             const current = ref.current
             if (current) {
                 const height = current.getBoundingClientRect().height
-                setOwnHeight(height)
+                if (height !== 1600) //default height
+                    setOwnHeight(height)
         }
     }}, [batch.length, loadedChildren, setOwnHeight])
 
@@ -35,7 +36,7 @@ export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwn
             <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
         </div>
     )
-    return <div ref={ref} className="w-full" style={{ minHeight: minHeight + "px" }}>
+    return <div ref={ref} className="w-full" key={dataKey} style={{ minHeight: minHeight + "px" }}>
         {batch.map((tweetWithURLs, index) => 
             <Tweet 
                 tweetWithURLs={tweetWithURLs}

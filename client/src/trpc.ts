@@ -18,7 +18,7 @@ export const trpcClient = createTRPCClient<AppRouter>({
                         `Bearer ${(typeof sessionStorage != 'undefined' && sessionStorage.getItem('userToken2')) || ''}`,
                     usertoken: getUserToken()
                 }
-            }
+            },
         }),
     ],
 })
