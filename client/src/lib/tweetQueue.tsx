@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX, type RefObject } from 'react'
-import type { TweetSchema } from '../../../api/source/api/schemas'
+import type { TweetInput } from '../../../api/source/api/schemas'
 import { trpcClient } from '../trpc'
 import { TweetBatch } from '../Tweet'
 import type { defaultSearchValues } from '../Stack'
@@ -7,7 +7,7 @@ import throttle from 'lodash/throttle'
 
 type TweetQuery = ReturnType<typeof trpcClient.getTweets.query>
 export type TweetWithURLs = {
-    data: TweetSchema
+    data: TweetInput
     mediaUrlBlobs: Promise<string>[] | string
 }
 
