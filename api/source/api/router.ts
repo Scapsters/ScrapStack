@@ -2,10 +2,11 @@ import { initTRPC, TRPCError } from '@trpc/server'
 import { type OperationMeta } from 'openapi-trpc'
 import z from 'zod'
 
-import { type TweetSchema, zStackSchema, zTweetSchema } from './schemas.js'
+import { Tweet, zStack, zStackInput, zStackSchema, zTweet, zTweetInput, zTweetSchema, } from './schemas.js'
 import { createLocalContext } from '../local.js'
 import { checkIsAdmin, getUser } from '../utils/auth.js'
 import { queryRandomTweets } from './db.js'
+import { ObjectId } from 'mongodb'
 
 //TODO: rate limiting with cloudflare
 const t = initTRPC
@@ -31,24 +32,22 @@ const isAdminProcedure = t.procedure.use(async function isAdmin(opts) {
 export const router = t.router({
 	// User
 	deleteUser: isUserProcedure
-		.mutation(async ({ ctx }) => (await ctx.User.deleteOne(ctx.User)).acknowledged),
+		.mutation(async ({ ctx }) => (await ctx.User.deleteOne({ _id: ctx.user._id })).acknowledged),
 	markTweet: isUserProcedure
-		.input(z.array(zTweetSchema))
-		.mutation(async ({ input, ctx }) =>{
-			const found = await ctx.Tweet.findOne(input[0])
-			console.log("found", !!found)
+		.input(z.array(zTweetInput))
+		.mutation(async ({ input, ctx }) => {
 			const result = (
-				await ctx.User.updateOne(ctx.user, {
-					$push: { viewedPosts: { $each: input.map(tweet => tweet.tweet_id) } },
+				await ctx.User.updateOne({ _id: ctx.user._id }, {
+					$push: { viewedPosts: { $each: input.map(tweet => new ObjectId(tweet._id)) } },
 				})
 			).acknowledged
-			console.log(result)
+			return result
 		}),
 
 	// Tweet
 	getRandomTweets: publicProcedure
-		.input(zTweetSchema.pick({ stackUsername: true }).and(zTweetSchema.partial()))
-		.output(z.array(zTweetSchema))
+		.input(zTweetInput.partial().extend({ stackUsername: zTweetInput.shape.stackUsername }))
+		.output(z.array(zTweet))
 		.query(async ({ input, ctx }) => {
 			if (input.isBanned && !(await checkIsAdmin(ctx))) {
 				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated to query banned tweets" })
@@ -56,8 +55,8 @@ export const router = t.router({
 			return await queryRandomTweets(ctx.Tweet, ctx.User, input, ctx.user)
 		}),
 	getRandomUnviewedTweets: isUserProcedure
-		.input(zTweetSchema.pick({ stackUsername: true }).and(zTweetSchema.partial()))
-		.output(z.array(zTweetSchema))
+		.input(zTweetInput.partial().extend({ stackUsername: zTweetInput.shape.stackUsername }))
+		.output(z.array(zTweet))
 		.query(async ({ input, ctx }) => {
 			if (input.isBanned && !(await checkIsAdmin(ctx))) {
 				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated to query banned tweets" })
@@ -66,7 +65,7 @@ export const router = t.router({
 			const unsentTweets = await queryRandomTweets(ctx.Tweet, ctx.User, 
 				{
 					stackUsername: input.stackUsername,
-					tweet_id: { $nin: ctx.user.sentPosts },
+					_id: { $nin: ctx.user.sentPosts },
 				},
 				ctx.user
 			)
@@ -74,19 +73,19 @@ export const router = t.router({
 			return await queryRandomTweets(ctx.Tweet, ctx.User, 
 				{
 					stackUsername: input.stackUsername,
-					tweet_id: { $nin: ctx.user.viewedPosts }
+					_id: { $nin: ctx.user.viewedPosts }
 				},
 				ctx.user
 			)
 		}),
 	getTweets: publicProcedure
 		.input(z.object({
-			tweetFilter: zTweetSchema.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
-			tweetSorter: z.record(zTweetSchema.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
+			tweetFilter: zTweetInput.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
+			tweetSorter: z.record(zTweetInput.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
 			page: z.number().min(0).default(0),
 			pageSize: z.number().max(100).min(1).default(20)
 		}))
-		.output(z.array(zTweetSchema))
+		.output(z.array(zTweet))
 		.query(async ({ input, ctx }) => {
 			const isSearchingForBans = input.tweetFilter.isBanned
 			if (isSearchingForBans && !(await checkIsAdmin(ctx))) {
@@ -108,7 +107,7 @@ export const router = t.router({
 							data: [{ $skip: (input.page) * input.pageSize }, { $limit: input.pageSize }]
 						}
 					}
-				]).toArray()) as { data: TweetSchema[] }[])[0].data
+				]).toArray()) as { data: Tweet[] }[])[0].data
 			return aggregationResult
 		}),
 	createTweets: isAdminProcedure
@@ -116,23 +115,23 @@ export const router = t.router({
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ input, ctx }) => (await ctx.Tweet.insertMany(input)).acknowledged),
 	banTweet: isAdminProcedure
-		.input(zTweetSchema)
+		.input(zTweetInput)
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
-		.mutation(async ({ input, ctx }) => (await ctx.Tweet.updateOne(input, { $set: { isBanned: true }} )).acknowledged),
+		.mutation(async ({ input, ctx }) => (await ctx.Tweet.updateOne({ _id: new ObjectId(input._id) }, { $set: { isBanned: true }} )).acknowledged),
 
 	// Stack
 	getStacks: publicProcedure
 		.input(zStackSchema.partial())
-		.output(z.array(zStackSchema))
+		.output(z.array(zStack))
 		.query(async ({ input, ctx }) => await ctx.Stack.find(input).toArray()),
 	createStack: isAdminProcedure
-		.input(zStackSchema.pick({ twitterHandle: true }))
+		.input(zStackInput.pick({ twitterHandle: true }))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ ctx, input }) => (await ctx.Stack.insertOne({ postCount: 0, ...input })).acknowledged),
 	deleteStack: isAdminProcedure
-		.input(zStackSchema.pick({ twitterHandle: true }))
+		.input(zStackInput.pick({ twitterHandle: true }))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
-		.mutation(async ({ ctx, input }) => (await ctx.Stack.deleteOne({ ...input })).acknowledged),
+		.mutation(async ({ ctx, input }) => (await ctx.Stack.deleteOne(input)).acknowledged),
 })
 
 export type AppRouter = typeof router
