@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type JSX, type RefObject, type SetStateAction } from 'react'
-import type { TweetInput } from '../../../api/source/api/schemas'
+import type { TweetClient } from '../../../api/source/api/schemas'
 import { trpcClient } from '../trpc'
 import { TweetBatch } from '../Tweet'
 import type { defaultSearchValues } from '../Stack'
@@ -7,7 +7,7 @@ import throttle from 'lodash/throttle'
 
 type TweetQuery = ReturnType<typeof trpcClient.getTweets.query>
 export type TweetWithURLs = {
-    data: TweetInput
+    data: TweetClient
     mediaUrlBlobs: Promise<string>[] | string
 }
 
@@ -101,7 +101,7 @@ export function useTweetQueue(
 
     // Promise handling stuff
     const makeTweetBatches = useCallback((promise: ReturnType<typeof extract>, batchIndex: number) => {
-        const setOwnHeight = (height: number) => {
+        const setOwnHeight = (height: number, isLoaded: boolean) => {
             setCache(cache => ({
                 ...cache,
                 [queryName]: {
@@ -110,7 +110,16 @@ export function useTweetQueue(
                         ...cache[queryName].heights.slice(0, batchIndex),
                         height,
                         ...cache[queryName].heights.slice(batchIndex + 1)
-                    ]
+                    ],
+                    ...(isLoaded
+                        ? { 
+                            unloadedBatchIndices: [
+                                ...cache[queryName].unloadedBatchIndices.slice(0, batchIndex),
+                                ...cache[queryName].unloadedBatchIndices.slice(batchIndex + 1),
+                            ]
+                        }
+                        : {}
+                    )
                 }
             }))
         }
@@ -168,7 +177,6 @@ export function useTweetQueue(
         fetchFirstTweet()
     }, [cache, extract, firstTweet, makeTweetBatches, queryName])
 
-    console.log(queryName)
     const lastFetch = useRef(0)
     useEffect(() => {
         const fetchTweets = async () => {

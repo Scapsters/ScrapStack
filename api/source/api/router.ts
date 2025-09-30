@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server'
 import { type OperationMeta } from 'openapi-trpc'
 import z from 'zod'
 
-import { Tweet, zStack, zStackInput, zStackSchema, zTweet, zTweetInput, zTweetSchema, } from './schemas.js'
+import { type Tweet, zStack, zTweet, zTweetSchema, } from './schemas.js'
 import { createLocalContext } from '../local.js'
 import { checkIsAdmin, getUser } from '../utils/auth.js'
 import { queryRandomTweets } from './db.js'
@@ -34,7 +34,7 @@ export const router = t.router({
 	deleteUser: isUserProcedure
 		.mutation(async ({ ctx }) => (await ctx.User.deleteOne({ _id: ctx.user._id })).acknowledged),
 	markTweet: isUserProcedure
-		.input(z.array(zTweetInput))
+		.input(z.array(zTweet))
 		.mutation(async ({ input, ctx }) => {
 			const result = (
 				await ctx.User.updateOne({ _id: ctx.user._id }, {
@@ -46,7 +46,7 @@ export const router = t.router({
 
 	// Tweet
 	getRandomTweets: publicProcedure
-		.input(zTweetInput.partial().extend({ stackUsername: zTweetInput.shape.stackUsername }))
+		.input(zTweet.partial().extend({ stackUsername: zTweet.shape.stackUsername }))
 		.output(z.array(zTweet))
 		.query(async ({ input, ctx }) => {
 			if (input.isBanned && !(await checkIsAdmin(ctx))) {
@@ -55,7 +55,7 @@ export const router = t.router({
 			return await queryRandomTweets(ctx.Tweet, ctx.User, input, ctx.user)
 		}),
 	getRandomUnviewedTweets: isUserProcedure
-		.input(zTweetInput.partial().extend({ stackUsername: zTweetInput.shape.stackUsername }))
+		.input(zTweet.partial().extend({ stackUsername: zTweet.shape.stackUsername }))
 		.output(z.array(zTweet))
 		.query(async ({ input, ctx }) => {
 			if (input.isBanned && !(await checkIsAdmin(ctx))) {
@@ -80,8 +80,8 @@ export const router = t.router({
 		}),
 	getTweets: publicProcedure
 		.input(z.object({
-			tweetFilter: zTweetInput.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
-			tweetSorter: z.record(zTweetInput.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
+			tweetFilter: zTweet.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
+			tweetSorter: z.record(zTweet.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
 			page: z.number().min(0).default(0),
 			pageSize: z.number().max(100).min(1).default(20)
 		}))
@@ -115,21 +115,21 @@ export const router = t.router({
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ input, ctx }) => (await ctx.Tweet.insertMany(input)).acknowledged),
 	banTweet: isAdminProcedure
-		.input(zTweetInput)
+		.input(zTweet)
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ input, ctx }) => (await ctx.Tweet.updateOne({ _id: new ObjectId(input._id) }, { $set: { isBanned: true }} )).acknowledged),
 
 	// Stack
 	getStacks: publicProcedure
-		.input(zStackSchema.partial())
+		.input(zStack.partial())
 		.output(z.array(zStack))
 		.query(async ({ input, ctx }) => await ctx.Stack.find(input).toArray()),
 	createStack: isAdminProcedure
-		.input(zStackInput.pick({ twitterHandle: true }))
+		.input(zStack.pick({ twitterHandle: true }))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ ctx, input }) => (await ctx.Stack.insertOne({ postCount: 0, ...input })).acknowledged),
 	deleteStack: isAdminProcedure
-		.input(zStackInput.pick({ twitterHandle: true }))
+		.input(zStack.pick({ twitterHandle: true }))
 		.output(z.boolean().describe(ACKNOWLEDGE_DESCRIPTION))
 		.mutation(async ({ ctx, input }) => (await ctx.Stack.deleteOne(input)).acknowledged),
 })

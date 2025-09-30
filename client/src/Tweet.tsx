@@ -10,41 +10,61 @@ import { Link } from "react-router-dom"
 import throttle from "lodash/throttle"
 import Loader from "./components/Loader"
 
-export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwnHeight, minHeight }: { 
+export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwnHeight, minHeight }: {
     batchPromise: Promise<TweetWithURLs[]>,
     view: (key: string, isRepeat: boolean) => void,
     dataKey: string
     openSearchWith: (values: typeof defaultSearchValues) => void,
-    setOwnHeight: (height: number) => void,
+    setOwnHeight: (height: number, isLoaded: boolean) => void,
     minHeight: number
 }) {
     const [batch, isBatchLoading] = usePromise(batchPromise, [])
     const ref = useRef<HTMLDivElement>(null)
     const [loadedChildren, setLoadedChildren] = useState(new Array<boolean>(batch.length).fill(false))
+
+    // // ResizeObserver replaces your old useEffect
+    // useEffect(() => {
+    //     const element = ref.current
+    //     if (!element) return
+
+    //     const observer = new ResizeObserver(entries => {
+    //         for (let entry of entries) {
+    //             const height = entry.contentRect.height
+    //             setOwnHeight(height)
+    //         }
+    //     })
+
+    //     observer.observe(element)
+    //     return () => observer.disconnect()
+    // }, [setOwnHeight])
+
     useEffect(() => {
         if (loadedChildren.every(c => c)) {
             const current = ref.current
             if (current) {
                 const height = current.getBoundingClientRect().height
                 if (height !== 1600) //default height
-                    setOwnHeight(height)
+                    setOwnHeight(height, true)
+            }
         }
-    }}, [batch.length, loadedChildren, setOwnHeight])
+    }, [batch.length, loadedChildren, setOwnHeight])
 
-    if (isBatchLoading) return (<Loader />)
+    if (isBatchLoading) return <Loader />
 
-    return <div ref={ref} className="w-full" key={dataKey} style={{ minHeight: minHeight + "px" }}>
-        {batch.map((tweetWithURLs, index) => 
-            <Tweet 
-                tweetWithURLs={tweetWithURLs}
-                dataKey={dataKey + index}
-                view={view} 
-                key={tweetWithURLs.data.tweet_id}
-                openSearchWith={openSearchWith}
-                load={() => setLoadedChildren(c => [...c.slice(0, index), true, ...c.slice(index + 1)])}
-            />)
-        }
-    </div>
+    return (
+        <div ref={ref} className="w-full" key={dataKey} style={{ minHeight: minHeight + "px" }}>
+            {batch.map((tweetWithURLs, index) =>
+                <Tweet
+                    tweetWithURLs={tweetWithURLs}
+                    dataKey={dataKey + index}
+                    view={view}
+                    key={tweetWithURLs.data.tweet_id}
+                    openSearchWith={openSearchWith}
+                    load={() => setLoadedChildren(c => [...c.slice(0, index), true, ...c.slice(index + 1)])}
+                />
+            )}
+        </div>
+    )
 }
 
 function Tweet({ tweetWithURLs, dataKey, view, openSearchWith, load }: {
@@ -93,7 +113,7 @@ function Tweet({ tweetWithURLs, dataKey, view, openSearchWith, load }: {
 
     const { adminSecret } = useContext(userContext)
 
-    
+
     const hasLoaded = useRef(false)
     useEffect(() => {
         if (hasLoaded.current || areUrlsLoading) return

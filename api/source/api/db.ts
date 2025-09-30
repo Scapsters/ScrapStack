@@ -16,7 +16,7 @@ export async function queryRandomTweets(
 
     if (user) {
         await User.updateOne({ _id : user._id }, {
-            $push: { sentPosts: { $each: sampledTweets.map(tweet => tweet._id) } }
+            $addToSet: { sentPosts: { $each: sampledTweets.map(tweet => tweet._id) } }
         })
     }
     return sampledTweets
