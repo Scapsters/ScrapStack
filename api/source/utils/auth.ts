@@ -22,7 +22,7 @@ export async function getUser(ctx: { User: Collection<UserSchema>, headers: Inco
 
 export async function checkIsAdmin(ctx: { headers: IncomingHttpHeaders }) {
     const adminPassword = getFromHeaders('authorization', ctx).split(' ')[1]
-	console.log(adminPassword)
+	console.log(ctx.headers.authorization)
     const adminSecret = await getSecretString('ADMIN_SECRET')
     return !!adminPassword && createHash('sha256').update(adminPassword).digest('hex') == adminSecret
 }

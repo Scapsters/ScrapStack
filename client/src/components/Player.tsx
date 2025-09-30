@@ -3,7 +3,6 @@ import {
 	MediaController,
 	MediaControlBar,
 	MediaTimeRange,
-	MediaVolumeRange,
 	MediaPlayButton,
 	MediaMuteButton,
 	MediaFullscreenButton,
@@ -31,6 +30,7 @@ export default function Player(props: Parameters<typeof ReactPlayer>[0]) {
 					ref={videoRef}
 					slot="media"
 					{...props}
+					loop={true}
 					muted={isMuted}
 					autoPlay={isVisible}
 					controls={false}
@@ -40,11 +40,10 @@ export default function Player(props: Parameters<typeof ReactPlayer>[0]) {
 					}}
 				></ReactPlayer>
 				<MediaControlBar>
-					<MediaPlayButton style={{ width: "30%", maxWidth: "80px" }} />
+					<MediaPlayButton style={{ width: "30%", maxWidth: "120px" }} />
 					<MediaTimeRange />
-					<MediaVolumeRange />
 					<MediaMuteButton onClick={() => setIsMuted && setIsMuted(false)} style={{ width: "30%", maxWidth: "80px" }}/>
-					<MediaFullscreenButton style={{ width: "10%", maxWidth: "80px" }} />
+					<MediaFullscreenButton style={{ width: "30%", maxWidth: "120px" }} />
 				</MediaControlBar>
 			</MediaController>
 		</div>

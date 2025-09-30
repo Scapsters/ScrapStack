@@ -1,14 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { Input } from '@headlessui/react'
-import { trpc } from './trpc'
 import { useQuery } from '@tanstack/react-query'
 import FuzzySearch from 'fuzzy-search'
 import { Link } from 'react-router-dom'
 import { TopBar } from './components/TopBar'
 import { GoSync } from 'react-icons/go'
+import { TrpcQueryClient } from './trpc'
 
 export default function StackSearch() {
     const [search, setSearch] = useState('')
+    const trpc = useContext(TrpcQueryClient)
 
     const { data: stacks, error, isLoading } = useQuery(trpc.getStacks.queryOptions({}))
     const searchedStacks = useMemo(

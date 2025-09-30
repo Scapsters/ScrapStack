@@ -1,5 +1,4 @@
 import { useCallback, useContext, useMemo, useRef, useState } from 'react'
-import { trpcClient } from './trpc'
 import { useTweetQueue } from './lib/tweetQueue'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { ScrollAwareTopBar, TopBar } from './components/TopBar'
@@ -11,6 +10,7 @@ import { SecureField } from './components/SecureField'
 import type { TweetSchema } from '../../api/source/api/schemas'
 import { GoSync } from 'react-icons/go'
 import Loader from './components/Loader'
+import { TrpcClient } from '@/trpc';
 
 export const defaultSearchValues = {
     content: "",
@@ -22,7 +22,7 @@ export function Stack() {
     const location = useLocation()
     const username = useMemo(() => location.pathname.split('/').pop() ?? '', [location])
     const centerText = `${username}${username.endsWith('s') ? "'" : "'s"} Stack`
-    //const isMobile = useIsMobile()
+    const trpcClient = useContext(TrpcClient)
 
     const { userToken, setUserToken, adminSecret, setAdminSecret } = useContext(userContext)
 

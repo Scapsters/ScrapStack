@@ -2,27 +2,32 @@ import { QueryClient } from '@tanstack/react-query'
 import type { AppRouter } from '../../api/source/api/router'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import './App.css'
-import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'
-import { getUserToken } from './lib/storageManager'
+import { createContext } from 'react'
+import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
 export const API_ROOT = import.meta.env.VITE_API_URL
 
 export const queryClient = new QueryClient()
-export const trpcClient = createTRPCClient<AppRouter>({
+
+export const defaultTrpcClient = createTRPCClient<AppRouter>({
     links: [
         httpBatchLink({
             url: API_ROOT,
             headers() {
                 return {
-                    authorization:
-                        `Bearer ${(typeof sessionStorage != 'undefined' && sessionStorage.getItem('userToken2')) || ''}`,
-                    usertoken: getUserToken()
+                    authorization: "",
+                    usertoken: ""
                 }
             },
         }),
     ],
 })
-export const trpc = createTRPCOptionsProxy<AppRouter>({
-    client: trpcClient,
-    queryClient,
-})
+
+export const TrpcQueryClient = createContext<ReturnType<typeof createTRPCOptionsProxy<AppRouter>>>(
+    createTRPCOptionsProxy<AppRouter>({
+        client: defaultTrpcClient,
+        queryClient,
+    })
+)
+
+export const TrpcClient = createContext<ReturnType<typeof createTRPCClient<AppRouter>>>(defaultTrpcClient)
