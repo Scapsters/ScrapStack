@@ -29,6 +29,7 @@
 
 @theme {
   --breakpoint-2xl: 98rem;
+  --breakpoint-3xl: 106rem;
   --color-light       : #EDE7E3;
   --color-extra-light: #fef8f4;
   --color-cyan-light: #82C0CC;
