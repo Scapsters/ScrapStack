@@ -1,35 +1,52 @@
-import ReactPlayer from "react-player";
+import ReactPlayer from "react-player"
 import {
-  MediaController,
-  MediaControlBar,
-  MediaTimeRange,
-  MediaVolumeRange,
-  MediaPlayButton,
-  MediaMuteButton,
-  MediaFullscreenButton,
-} from "media-chrome/react";
+	MediaController,
+	MediaControlBar,
+	MediaTimeRange,
+	MediaVolumeRange,
+	MediaPlayButton,
+	MediaMuteButton,
+	MediaFullscreenButton,
+} from "media-chrome/react"
+import { useIsVisible } from "@/lib/tweetHooks"
+import { useContext, useRef, useState } from "react"
+import { playerContext } from "@/lib/playerContext"
 
 export default function Player(props: Parameters<typeof ReactPlayer>[0]) {
-  return (
-    <MediaController
-    className="h-60 md:h-80 lg:h-120 aspect-auto"
-    >
-      <ReactPlayer
-        slot="media"
-        {...props}
-        controls={false}
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-      ></ReactPlayer>
-      <MediaControlBar>
-        <MediaPlayButton />
-        <MediaTimeRange />
-        <MediaMuteButton />
-        <MediaVolumeRange />
-        <MediaFullscreenButton />
-      </MediaControlBar>
-    </MediaController>
-  );
+
+	const [visibilityRef, setVisibilityRef] = useState<HTMLDivElement | null>(null)
+	const videoRef = useRef<HTMLVideoElement>(null)
+	const [isVisible] = useIsVisible(visibilityRef)
+
+	const { isMuted, setIsMuted } = useContext(playerContext)
+	
+	return (
+		<div 
+			ref={setVisibilityRef}	
+		>
+			<MediaController
+				className={`min-w-0 max-w-[90dvw] lg:max-w-[40dvw]`}
+			>
+				<ReactPlayer
+					ref={videoRef}
+					slot="media"
+					{...props}
+					muted={isMuted}
+					autoPlay={isVisible}
+					controls={false}
+					style={{
+						width: "100%",
+						height: "100%",
+					}}
+				></ReactPlayer>
+				<MediaControlBar>
+					<MediaPlayButton style={{ width: "30%", maxWidth: "80px" }} />
+					<MediaTimeRange />
+					<MediaVolumeRange />
+					<MediaMuteButton onClick={() => setIsMuted && setIsMuted(false)} style={{ width: "30%", maxWidth: "80px" }}/>
+					<MediaFullscreenButton style={{ width: "10%", maxWidth: "80px" }} />
+				</MediaControlBar>
+			</MediaController>
+		</div>
+	)
 }

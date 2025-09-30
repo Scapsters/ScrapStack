@@ -7,16 +7,18 @@ export function TopBar({ centerText, className }: { centerText?: string, classNa
         <div className={`bg-cyan border-b-10 border-b-cyan-light h-20 text-light ${className}`}>
             <div className="flex justify-between items-center px-5 sm:px-10 gap-2 h-full">
                 <>
-                    <Link className="text-lg sm:text-2xl button text-left hover:underline cursor-pointer" to="/">
-                        <img src="/favicon.ico" className="size-8"></img>
+                    <Link className="flex button gap-2 text-lg sm:text-2xl text-left w-50 cursor-pointer" to="/">
+                        <div>
+                            <img src="/favicon.ico" className="size-8"></img>
+                        </div>
+                        <div className="hidden sm:block">
+                            Scrapstack
+                        </div>
                     </Link>
-                    <Link className="hidden md:block text-lg sm:text-2xl text-left hover:underline cursor-pointer" to="/">
-                        Scrapstack
-                    </Link>
-                    <p className="text-left md:text-center grow">{centerText}</p>
-                    <Link className="text-md button gap-2 text-right sm:text-xl hover:underline cursor-pointer flex" to="/stacks">
-                        <div className="flex gap-2 items-center">
-                            <GoSearch size={24}/>
+                    <p className="text-center grow">{centerText}</p>
+                    <Link className="text-md gap-2 text-right sm:text-xl w-50 cursor-pointer flex flex-row-reverse" to="/stacks">
+                        <div className="flex items-center gap-2 button">
+                            <GoSearch size={24} />
                             <p>Stacks</p>
                         </div>
                     </Link>
@@ -41,11 +43,11 @@ export function ScrollAwareTopBar({ centerText }: { centerText?: string }) {
             lastScroll.current = currentScroll.current
             currentScroll.current = window.scrollY
             const deltaScroll = currentScroll.current - lastScroll.current
-                setYOffset(prevOffset => 
-                    Math.max(-160,
-                        Math.min(0, 
-                            prevOffset - deltaScroll
-                )))
+            setYOffset(prevOffset =>
+                Math.max(-160,
+                    Math.min(0,
+                        prevOffset - deltaScroll
+                    )))
         }
         window.document.addEventListener("scroll", handleScroll)
         return () => window.document.removeEventListener("scroll", handleScroll)

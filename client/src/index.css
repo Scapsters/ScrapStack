@@ -28,7 +28,7 @@
 }
 
 @theme {
-  --breakpoint-2xl: 89rem;
+  --breakpoint-2xl: 98rem;
   --color-light       : #EDE7E3;
   --color-extra-light: #fef8f4;
   --color-cyan-light: #82C0CC;
@@ -87,11 +87,10 @@
 }
 
 .brand {
-  @apply text-transparent w-fit h-fit bg-linear-to-tr from-cyan-light from-20% to-purple-400 leading-20;
+  @apply text-transparent w-fit h-fit bg-linear-to-tr from-20% to-[#64dbcc] via-[#95d98d] from-[#e3c14a] to-70% leading-20;
   -webkit-background-clip: text;
   background-clip: text;
 }
-
 .button {
   @apply rounded-md border-2 border-transparent hover:bg-black/10 p-1 hover:border-cyan h-min active:bg-cyan-light 
 }

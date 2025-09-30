@@ -8,6 +8,7 @@ import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from "react-icons/go"
 import { defaultSearchValues } from "./Stack"
 import { Link } from "react-router-dom"
 import throttle from "lodash/throttle"
+import Loader from "./components/Loader"
 
 export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwnHeight, minHeight }: { 
     batchPromise: Promise<TweetWithURLs[]>,
@@ -30,12 +31,8 @@ export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwn
         }
     }}, [batch.length, loadedChildren, setOwnHeight])
 
-    if (isBatchLoading) return (
-        <div className="hidden h-80 flex flex-col items-center gap-6">
-            Scrap Data Loading...
-            <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
-        </div>
-    )
+    if (isBatchLoading) return (<Loader />)
+
     return <div ref={ref} className="w-full" key={dataKey} style={{ minHeight: minHeight + "px" }}>
         {batch.map((tweetWithURLs, index) => 
             <Tweet 
@@ -45,8 +42,8 @@ export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwn
                 key={tweetWithURLs.data.tweet_id}
                 openSearchWith={openSearchWith}
                 load={() => setLoadedChildren(c => [...c.slice(0, index), true, ...c.slice(index + 1)])}
-            />
-        )}
+            />)
+        }
     </div>
 }
 
@@ -126,7 +123,7 @@ function Tweet({ tweetWithURLs, dataKey, view, openSearchWith, load }: {
                     </a>
                 </div>
                 <div className="w-4/5 text-center"> {tweet.content} </div>
-                <div className="flex gap-2 w-[90dvw] justify-center items-center md:flex-nowrap flex-wrap"> {
+                <div className="flex gap-2 w-[90dvw] justify-center items-center flex-wrap"> {
                     images
                 } </div>
                 <div className="w-full flex justify-center relative">

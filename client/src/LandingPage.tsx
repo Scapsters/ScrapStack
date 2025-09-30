@@ -1,8 +1,10 @@
+import { Link } from "react-router-dom"
+
 export function LandingPage() {
     return (
         <>
             {/* Banner */}
-            <div className="bg-dark w-full h-200 2xl:h-230 text-light square">
+            <div className="bg-dark w-full h-210 2xl:h-230 text-light square">
                 <div className="flex flex-col items-center w-full">
                     {/* Title */}
                     <p className="mt-10 lg:mt-40 w-min lg:w-max text-6xl sm:text-8xl">Your likes, unprivated.</p>
@@ -103,6 +105,9 @@ export function LandingPage() {
             </div>
 
             <div className="flex flex-col items-center w-full text-lg">
+                <Link to="/stacks" className="button text-lg p-2! bg-cyan hover:bg-cyan-light! active:bg-white text-white mt-15">
+                    See Active Stacks
+                </Link>
                 <div className="px-10 w-full md:w-200 text-dark">
                     <h1>Your likes, public again.</h1>
                     <p className="mt-5">
@@ -179,7 +184,7 @@ export function LandingPage() {
                             safety.
                         </li>
                     </ul>
-                    <p className="mt-10 w-max font-bold">
+                    <p className="mt-10 font-bold">
                         The risk for you is our script sending your cookies to us, which should{' '}
                         <span className="underline">never</span> happen.
                     </p>
@@ -190,10 +195,8 @@ export function LandingPage() {
                         people who wish they could show their likes to others. My particular inspiration are the furry
                         artists that used their likes page as a way to show off cool art from smaller artists.
                     </p>
-                    <p className="mt-5 mb-10">
-                        I'm not looking for money or anything, this landing page only exists because I thought it'd be
-                        fun to practice making "startup"-looking websites, since it seems my career will be web
-                        development.
+                    <p className="mt-10 text-black/60 text-md mb-10">
+                        {"The application that obtained the data that made this project possible was written by @aguaral on Discord. Thank u <3"}
                     </p>
                 </div>
             </div>

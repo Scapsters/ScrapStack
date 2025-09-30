@@ -10,7 +10,7 @@ import { userContext } from './lib/userContext'
 import { SecureField } from './components/SecureField'
 import type { TweetSchema } from '../../api/source/api/schemas'
 import { GoSync } from 'react-icons/go'
-import useIsMobile from './lib/useIsMobile'
+import Loader from './components/Loader'
 
 export const defaultSearchValues = {
     content: "",
@@ -22,7 +22,7 @@ export function Stack() {
     const location = useLocation()
     const username = useMemo(() => location.pathname.split('/').pop() ?? '', [location])
     const centerText = `${username}${username.endsWith('s') ? "'" : "'s"} Stack`
-    const isMobile = useIsMobile()
+    //const isMobile = useIsMobile()
 
     const { userToken, setUserToken, adminSecret, setAdminSecret } = useContext(userContext)
 
@@ -78,7 +78,7 @@ export function Stack() {
         //if (!isMobile) setIsSettingsOpen(true) // feels terrible on mobile
         setTimeout(() => setHandleStyle("bg-cyan-light!"), 300)
         setTimeout(() => setHandleStyle(""), 800)
-    }, [isMobile, resetForm, setParams])
+    }, [resetForm, setParams])
     const submitForm = useCallback(() => {
         const formData = getFormValues()
         setParams({
@@ -88,12 +88,14 @@ export function Stack() {
         })
     }, [formSortBy, formSortDirection, getFormValues, setParams])
 
+    const [doTweetsExist, setDoTweetsExist] = useState(false)
     const [tweetBatches, isLoading] = useTweetQueue(
         getNextTweet,
         openSearchWith,
         window.scrollY,
         CSS.escape(JSON.stringify({ ...searchFilter, ...searchSorter })),
         ref,
+        setDoTweetsExist,
         getEntryTweet,
     )
 
@@ -170,7 +172,9 @@ export function Stack() {
             </SideBar>
             <div className="flex justify-center pt-4">
                 <div className="flex flex-col items-center gap-5 w-9/10 lg:w-275">
-                    {tweetBatches}
+                    {isLoading 
+                        ? <Loader />
+                        : doTweetsExist ? tweetBatches : <p>No Scraps found. Please try a different search.</p> }
                 </div>
             </div>
         </div>

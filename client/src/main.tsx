@@ -23,7 +23,7 @@ const routes: RouteRecord[] = [
 			{
 				path: 'stacks/:u',
 				element: <ClientOnly>{() => <Stack />}</ClientOnly>,
-				getStaticPaths: () => ['Scappy11'].map(user => `/stacks/${user}`)
+				getStaticPaths: () => ['Scappy11', "AguaralX"].map(user => `/stacks/${user}`)
 			}
 		]
 	},

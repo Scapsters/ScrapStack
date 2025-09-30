@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type JSX, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type JSX, type RefObject, type SetStateAction } from 'react'
 import type { TweetSchema } from '../../../api/source/api/schemas'
 import { trpcClient } from '../trpc'
 import { TweetBatch } from '../Tweet'
@@ -17,19 +17,20 @@ export function useTweetQueue(
     scrollTop: number,
     queryName: string,
     stackRef: RefObject<HTMLDivElement | null>,
+    setDoTweetsExist: React.Dispatch<SetStateAction<boolean>>,
     firstTweet?: () => TweetQuery,
-): [JSX.Element[], boolean] {
-    const [isLoading, setIsLoading] = useState(false)
+) {
+    const [isLoading, setIsLoading] = useState(true)
     const [cache, setCache] = useState<Cache>({ [queryName]: getEmptyCache() })
 
     // Promise handling
     const extract = useCallback(async (query: TweetQuery, callback: () => void) => {
         return query.then((tweets) =>
             tweets.map((tweet) => {
-                const mediaUrlResponses = tweet.media_url.map((url) => 
+                const mediaUrlResponses = tweet.media_url.map((url) =>
                     url.includes("m3u8") || url.includes("mp4")
-                    ? new Promise<string>(resolve => resolve(url)) 
-                    : fetch(url).then((response) => response.blob()).then((data) => URL.createObjectURL(data))
+                        ? new Promise<string>(resolve => resolve(url))
+                        : fetch(url).then((response) => response.blob()).then((data) => URL.createObjectURL(data))
                 )
 
                 return {
@@ -142,32 +143,16 @@ export function useTweetQueue(
 
     // Fetching stuff
     const submittedFirstTweet = useRef(false)
-    if (firstTweet && !submittedFirstTweet.current) {
-        const currentCache = cache[queryName] ?? getEmptyCache()
-        const currentBatches = currentCache.batches
-        const batchPromise = extract(firstTweet(), () => setIsLoading(false))
-        currentBatches.push(makeTweetBatches(batchPromise, currentBatches.length))
-        setCache(cache => ({
-            ...cache,
-            [queryName]: {
-                ...currentCache,
-                batches: currentBatches,
-                totalBatches: currentBatches.length,
-            }
-        }))
-        submittedFirstTweet.current = true
-    }
-
-    const lastFetch = useRef(0)
-    if (Date.now() - lastFetch.current > 100) { // throttle mainly for page load
-        const stack = stackRef.current
-        if (stack) {
-            const distanceToBottom = stack.getBoundingClientRect().bottom
-            if (distanceToBottom < 6000) {
+    useEffect(() => {
+        const fetchFirstTweet = async () => {
+            await Promise.resolve()
+            if (firstTweet && !submittedFirstTweet.current) {
                 const currentCache = cache[queryName] ?? getEmptyCache()
                 const currentBatches = currentCache.batches
-                if (currentCache.totalBatches == 0) setIsLoading(true)
-                const batchPromise = extract(getNextTweet(currentBatches.length), () => setIsLoading(false))
+
+                setIsLoading(true)
+                const batchPromise = extract(firstTweet(), () => setIsLoading(false))
+
                 currentBatches.push(makeTweetBatches(batchPromise, currentBatches.length))
                 setCache(cache => ({
                     ...cache,
@@ -177,12 +162,58 @@ export function useTweetQueue(
                         totalBatches: currentBatches.length,
                     }
                 }))
-                lastFetch.current = Date.now()
+                submittedFirstTweet.current = true
             }
         }
-    }
+        fetchFirstTweet()
+    }, [cache, extract, firstTweet, makeTweetBatches, queryName])
 
-    return [virtualizeBatches(cache[queryName], scrollTop), isLoading] as const // LETS GO virtualization
+    console.log(queryName)
+    const lastFetch = useRef(0)
+    useEffect(() => {
+        const fetchTweets = async () => {
+            await Promise.resolve()
+            if (Date.now() - lastFetch.current > 100) { // throttle mainly for page load
+                const stack = stackRef.current
+                if (stack) {
+                    const distanceToBottom = stack.getBoundingClientRect().bottom
+                    if (distanceToBottom < 6000) {
+                        const currentCache = cache[queryName] ?? getEmptyCache()
+                        const currentBatches = currentCache.batches
+
+                        console.log(currentCache.totalBatches)
+                        if (currentBatches.length == 0) setIsLoading(true)
+                        const batchPromise = extract(getNextTweet(currentBatches.length), () => setIsLoading(false))
+
+                        setCache(cache => ({
+                            ...cache,
+                            [queryName]: {
+                                ...currentCache,
+                                batches: [...currentBatches, makeTweetBatches(batchPromise, currentBatches.length)],
+                                totalBatches: currentBatches.length + 1,
+                            }
+                        }))
+                        lastFetch.current = Date.now()
+                    }
+                }
+            }
+        }
+        fetchTweets()
+    }, [cache, extract, getNextTweet, makeTweetBatches, queryName, stackRef])
+
+    cache[queryName]?.batches[0]?.batchPromise.then(result => {
+        if (result.length == 0) setDoTweetsExist(false)
+    })
+    useEffect(() =>
+        setDoTweetsExist(true),
+        [queryName]
+    )
+
+    return [
+        virtualizeBatches(cache[queryName], scrollTop), // LETS GO virtualization
+        isLoading,
+        setIsLoading
+    ] as const
     //return [cache[queryName]?.batches ?? getEmptyCache().batches, isLoading] as const
 }
 
@@ -223,7 +254,7 @@ function virtualizeBatches(cache?: Cache[string], scrollTop?: number): JSX.Eleme
         ...cache.heights.slice(endIndex).map((height, index) => <div style={{ height: height + "px" }} key={"spacer bottom" + index}></div>)
     ]
     const unloadedBatchesInjection = visibleBatches.map((element, index) =>
-        cache.unloadedBatchIndices.includes(index) 
+        cache.unloadedBatchIndices.includes(index)
             ? spreadIntoTweetBatch(cache.batches[index])
             : element
     )
