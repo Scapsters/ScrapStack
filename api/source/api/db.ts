@@ -1,4 +1,4 @@
-import { Collection, ObjectId, type StrictFilter } from "mongodb"
+import { Collection, type StrictFilter } from "mongodb"
 import type { Tweet, TweetSchema, User, UserSchema } from "./schemas.js"
 
 export async function queryRandomTweets(
