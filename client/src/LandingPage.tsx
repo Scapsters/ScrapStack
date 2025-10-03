@@ -28,7 +28,7 @@ export function LandingPage() {
                     </div>
                 </div>
                 {/* Timeline */}
-                <div className="mt-10 lg:mt-60 2xl:mt-90">
+                <div className="mt-10 lg:mt-60 3xl:mt-90">
                     {/* Desktop Timeline */}
                     <div className="invisible lg:visible absolute bg-cyan w-6/10 h-4" />
                     <div className="invisible lg:visible left-1/10 absolute bg-cyan rounded-md w-3 h-20 -translate-y-8" />
