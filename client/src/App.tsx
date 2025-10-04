@@ -8,6 +8,7 @@ import { playerContext } from './lib/playerContext';
 
 export default function App() {
     const isBrowser = typeof window !== 'undefined'
+    // setting this does not set the user token. This cannot be subscribed to via useSyncExternal storage because it does not fire off listeners in the window where the change originated
     const [userToken, setUserToken] = useState(isBrowser ? window.localStorage.getItem("userToken") ?? "" : "")
     const [adminSecret, setAdminSecret] = useState("")
     const [isMuted, setIsMuted] = useState(true)
