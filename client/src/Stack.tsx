@@ -102,7 +102,7 @@ export function Stack() {
     if (!setUserToken || !setAdminSecret || userToken === undefined) return (
         <div className="w-full text-center mt-10">
             <div className="w-80">
-                Context Loading... This shouldn't happen, please refresh the page, then clear your browsers cache, cookies, and local storage if the issue persists.
+                Context had a problem loading. please refresh the page, then clear your browsers cache, cookies, and local storage if the issue persists.
             </div>
         </div>
     )
