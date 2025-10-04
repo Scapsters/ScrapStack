@@ -22,7 +22,7 @@ export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwn
     const ref = useRef<HTMLDivElement>(null)
     const [loadedChildren, setLoadedChildren] = useState(new Array<boolean>(batch.length).fill(false))
 
-    // // ResizeObserver replaces your old useEffect
+    // // ResizeObserver replaces old useEffect
     // useEffect(() => {
     //     const element = ref.current
     //     if (!element) return
