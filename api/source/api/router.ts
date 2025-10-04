@@ -52,7 +52,10 @@ export const router = t.router({
 			if (input.isBanned && !(await checkIsAdmin(ctx))) {
 				throw new TRPCError({ code: 'FORBIDDEN', message: "User not authenticated to query banned tweets" })
 			}
-			return await queryRandomTweets(ctx.Tweet, ctx.User, input, ctx.user)
+			return await queryRandomTweets(ctx.Tweet, ctx.User, {
+				...input,
+				isBanned: input.isBanned ?? false,
+			}, ctx.user)
 		}),
 	getRandomUnviewedTweets: isUserProcedure
 		.input(zTweet.partial().extend({ stackUsername: zTweet.shape.stackUsername }))
@@ -65,6 +68,7 @@ export const router = t.router({
 			const unsentTweets = await queryRandomTweets(ctx.Tweet, ctx.User, 
 				{
 					stackUsername: input.stackUsername,
+					isBanned: input.isBanned ?? false,
 					_id: { $nin: ctx.user.sentPosts },
 				},
 				ctx.user
@@ -73,6 +77,7 @@ export const router = t.router({
 			return await queryRandomTweets(ctx.Tweet, ctx.User, 
 				{
 					stackUsername: input.stackUsername,
+					isBanned: input.isBanned ?? false,
 					_id: { $nin: ctx.user.viewedPosts }
 				},
 				ctx.user
@@ -100,7 +105,10 @@ export const router = t.router({
 			}
 			const aggregationResult = ((await ctx.Tweet
 				.aggregate([
-					{ $match: input.tweetFilter },
+					{ $match: {
+						...input.tweetFilter, 
+						isBanned: input.tweetFilter.isBanned ?? false 
+					} },
 					{ $sort: Object.keys(input.tweetSorter).length == 0 ? { date_time: 1 } : input.tweetSorter }, // Cover the case of {}. Maintain default in validation for documentation
 					{
 						$facet: {

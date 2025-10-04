@@ -9,10 +9,9 @@ export const zUserSchema = z.object({
   viewedPosts: z.array(zObjectId),
   sentPosts: z.array(zObjectId),
 })
-export type UserSchema = z.infer<typeof zUserSchema>
-export const zUserClient = zUserSchema.extend({ _id: z.string() })
-export type UserClient = z.infer<typeof zUserClient>
 export const zUser = zUserSchema.extend({ _id: zObjectId })
+export type UserSchema = z.infer<typeof zUserSchema>
+export type UserClient = z.input<typeof zUser>
 export type User = z.infer<typeof zUser>
 
 export const zTweetSchema = z.object({
@@ -36,18 +35,16 @@ export const zTweetSchema = z.object({
     tags: z.array(z.string())
   }))
 })
-export type TweetSchema = z.infer<typeof zTweetSchema>
-export const zTweetClient = zTweetSchema.extend({ _id: z.string() })
-export type TweetClient = z.infer<typeof zTweetClient>
 export const zTweet = zTweetSchema.extend({ _id: zObjectId })
+export type TweetSchema = z.infer<typeof zTweetSchema>
+export type TweetClient = z.input<typeof zTweet>
 export type Tweet = z.infer<typeof zTweet>
 
 export const zStackSchema = z.object({
   twitterHandle: z.string(),
   postCount: z.number()
 })
-export type StackSchema = z.infer<typeof zStackSchema>
-export const zStackClient = zStackSchema.extend({ _id: z.string() })
-export type StackClient = z.infer<typeof zStackClient>
 export const zStack = zStackSchema.extend({ _id: zObjectId })
+export type StackSchema = z.infer<typeof zStackSchema>
+export type StackClient = z.infer<typeof zStack>
 export type Stack = z.infer<typeof zStack>

@@ -11,7 +11,7 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       DB_CREDENTIALS = aws_secretsmanager_secret.db_credentials.id
-      ADMIN_ANSWER   = aws_secretsmanager_secret.admin_secret.id
+      ADMIN_SECRET   = aws_secretsmanager_secret.admin_secret.id
       ENVIRONMENT    = "lambda"
     }
   }

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type JSX, type RefObject, type SetStateAction } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState, type JSX, type RefObject, type SetStateAction } from 'react'
 import type { TweetClient } from '../../../api/source/api/schemas'
-import { trpcClient } from '../trpc'
+import { defaultTrpcClient, TrpcClient } from '../trpc'
 import { TweetBatch } from '../Tweet'
 import type { defaultSearchValues } from '../Stack'
 import throttle from 'lodash/throttle'
 
-type TweetQuery = ReturnType<typeof trpcClient.getTweets.query>
+type TweetQuery = ReturnType<typeof defaultTrpcClient.getTweets.query>
 export type TweetWithURLs = {
     data: TweetClient
     mediaUrlBlobs: Promise<string>[] | string
@@ -22,6 +22,7 @@ export function useTweetQueue(
 ) {
     const [isLoading, setIsLoading] = useState(true)
     const [cache, setCache] = useState<Cache>({ [queryName]: getEmptyCache() })
+    const trpcClient = useContext(TrpcClient)
 
     // Promise handling
     const extract = useCallback(async (query: TweetQuery, callback: () => void) => {

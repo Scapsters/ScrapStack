@@ -3,12 +3,12 @@ import { useIsVisible, usePromise, useTweet } from "./lib/tweetHooks"
 import type { TweetWithURLs } from "./lib/tweetQueue"
 import { userContext } from "./lib/userContext"
 import { ConfirmActionButton, CopyButton } from "./components/ConfirmActionButton"
-import { trpcClient } from "./trpc"
 import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from "react-icons/go"
 import { defaultSearchValues } from "./Stack"
 import { Link } from "react-router-dom"
 import throttle from "lodash/throttle"
 import Loader from "./components/Loader"
+import { TrpcClient } from "./trpc"
 
 export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwnHeight, minHeight }: {
     batchPromise: Promise<TweetWithURLs[]>,
@@ -22,7 +22,7 @@ export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwn
     const ref = useRef<HTMLDivElement>(null)
     const [loadedChildren, setLoadedChildren] = useState(new Array<boolean>(batch.length).fill(false))
 
-    // // ResizeObserver replaces your old useEffect
+    // // ResizeObserver replaces old useEffect
     // useEffect(() => {
     //     const element = ref.current
     //     if (!element) return
@@ -74,6 +74,8 @@ function Tweet({ tweetWithURLs, dataKey, view, openSearchWith, load }: {
     openSearchWith: (values: typeof defaultSearchValues) => void
     load: () => void
 }) {
+    const trpcClient = useContext(TrpcClient)
+
     const [loadedImages, setLoadedImages] = useState(new Array<boolean>(tweetWithURLs.mediaUrlBlobs.length).fill(false))
     const [images, areUrlsLoading, markAsViewed] = useTweet(tweetWithURLs, (imageIndex: number) => setLoadedImages(loaded => [
         ...loaded.slice(0, imageIndex),
