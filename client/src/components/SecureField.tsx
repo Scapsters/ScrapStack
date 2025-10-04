@@ -1,9 +1,9 @@
 import { Field, Input, Label } from "@headlessui/react"
 import { CopyButton } from "./ConfirmActionButton"
-import { useState, type SetStateAction } from "react"
+import { useState } from "react"
 import { GoEye, GoEyeClosed } from "react-icons/go"
 
-export function SecureField({ name, placeholder, value, setValue }: { name: string, placeholder: string, value: string, setValue: React.Dispatch<SetStateAction<string>> }) {
+export function SecureField({ name, placeholder, value, setValue }: { name: string, placeholder: string, value: string, setValue: (value: string) => void }) {
     const [isRevealed, setIsRevealed] = useState(false)
     return (
         <Field className="flex md:justify-between items-center flex-wrap">
