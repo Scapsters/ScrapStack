@@ -5,7 +5,6 @@ import { Outlet } from 'react-router-dom'
 import { userContext } from './lib/userContext';
 import { useState } from 'react'
 import { playerContext } from './lib/playerContext';
-// import type { Tweet, TweetInput } from '../../api/source/api/schemas'
 
 export default function App() {
     const isBrowser = typeof window !== 'undefined'
