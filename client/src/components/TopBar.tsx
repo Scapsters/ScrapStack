@@ -30,30 +30,38 @@ export function TopBar({ centerText, className }: { centerText?: string, classNa
 
 export function ScrollAwareTopBar({ centerText }: { centerText?: string }) {
     const bar = useRef<HTMLDivElement | null>(null)
-    const [yOffset, setYOffset] = useState(0)
 
     const lastScroll = useRef(0)
-    const currentScroll = useRef(0)
+    const scrollInCurrentDirection = useRef(0)
     useEffect(() => {
         if (typeof window == 'undefined') return
+        let ticking = false
+        
         const handleScroll = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const deltaScroll = window.scrollY - lastScroll.current
 
-            if (!bar.current) return
+                    if (deltaScroll > 0 && scrollInCurrentDirection.current > 100) bar.current!.style.top = '-160px'
+                    else bar.current!.style.top = '0px'
+                    
+                    // If signs match, add. If they dont, reset
+                    scrollInCurrentDirection.current = scrollInCurrentDirection.current * deltaScroll > 0
+                        ? scrollInCurrentDirection.current + deltaScroll
+                        : deltaScroll
 
-            lastScroll.current = currentScroll.current
-            currentScroll.current = window.scrollY
-            const deltaScroll = currentScroll.current - lastScroll.current
-            setYOffset(prevOffset =>
-                Math.max(-160,
-                    Math.min(0,
-                        prevOffset - deltaScroll
-                    )))
+                    lastScroll.current = window.scrollY
+                    ticking = false
+                })
+                ticking = true
+            }
         }
         window.document.addEventListener("scroll", handleScroll)
         return () => window.document.removeEventListener("scroll", handleScroll)
-    })
+    }, [])
+
     return (
-        <div className="fixed w-full z-10" style={{ top: yOffset + "px" }} ref={bar}>
+        <div className="fixed w-full z-10 transition-all duration-400 top-0" ref={bar}>
             <TopBar centerText={centerText} />
         </div>
     )
