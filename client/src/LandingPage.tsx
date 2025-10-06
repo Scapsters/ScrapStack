@@ -66,7 +66,7 @@ export function LandingPage() {
                             src="yeah.jpg"
                             className="left-3/10 absolute rounded-lg w-40 aspect-auto -translate-x-18 -translate-y-30"
                         />
-                        <p className="top-116 2xl:top-146 left-6/10 absolute h-7/5 text-6xl text-center -translate-x-1/2 brand">
+                        <p className="top-116 3xl:top-146 left-6/10 absolute h-7/5 text-6xl text-center -translate-x-1/2 brand">
                             {' '}
                             Scrapstack{' '}
                         </p>

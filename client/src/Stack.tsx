@@ -10,7 +10,7 @@ import { SecureField } from './components/SecureField'
 import type { TweetSchema } from '../../api/source/api/schemas'
 import { GoSync } from 'react-icons/go'
 import Loader from './components/Loader'
-import { TrpcClient } from '@/trpc';
+import { TrpcClient } from '@/trpc'
 
 export const defaultSearchValues = {
     content: "",
@@ -41,7 +41,7 @@ export function Stack() {
             ? { [sortByParam]: sortDirectionParam }
             : undefined
     }, [params])
-    
+
     // Queue
     const isQueryingRandom = Object.values(searchFilter).every(item => item === undefined) && !searchSorter
     const getNextTweet = useCallback((batchIndex: number) => {
@@ -55,11 +55,11 @@ export function Stack() {
             return trpcClient.getRandomUnviewedTweets.query({ stackUsername: username })
         }
     }, [isQueryingRandom, searchFilter, searchSorter, username])
-    const getEntryTweet = useMemo(() => 
+    const getEntryTweet = useMemo(() =>
         entryTweet
             ? (() => trpcClient.getTweets.query({ tweetFilter: { tweet_id: entryTweet ?? undefined } }))
             : undefined
-    , [entryTweet])
+        , [entryTweet])
     const ref = useRef<HTMLDivElement>(null)
 
     // Form
@@ -67,7 +67,7 @@ export function Stack() {
         getValues: getFormValues,
         reset: resetForm,
         register
-    } = useForm<typeof defaultSearchValues>({ defaultValues: { ...defaultSearchValues, ...searchFilter }})
+    } = useForm<typeof defaultSearchValues>({ defaultValues: { ...defaultSearchValues, ...searchFilter } })
     const [formSortBy, setFormSortBy] = useState<keyof TweetSchema | "Default">("Default")
     const [formSortDirection, setFormSortDirection] = useState<1 | -1>(1)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -101,18 +101,18 @@ export function Stack() {
     if (!setUserToken || !setAdminSecret) return (
         <div className="w-full text-center mt-10">
             <div className="w-80">
-                Context Loading... This shouldn't happen, please refresh the page, then clear your browsers cache, cookies, and local storage if the issue persists.
+                Context had a problem loading. please refresh the page, then clear your browsers cache, cookies, and local storage if the issue persists.
             </div>
         </div>
     )
-    
+
     return (
         <div ref={ref}>
             <ScrollAwareTopBar centerText={centerText} />
-            <TopBar centerText={centerText} className={typeof window === "undefined" ? "visible" : "invisible"}/>
+            <TopBar centerText={centerText} className={typeof window === "undefined" ? "visible" : "invisible"} />
             <SideBar isOpen={isSettingsOpen} setIsOpen={setIsSettingsOpen}>
                 <form
-                    className={`relative rounded-lg m-2 py-2`} 
+                    className={`relative rounded-lg m-2 py-2`}
                     onSubmit={(e) => {
                         e.preventDefault()
                         submitForm()
@@ -163,7 +163,10 @@ export function Stack() {
                 <div className="bg-cyan-dark h-0.5 w-4/5 mt-8 mx-10"></div>
                 <div className="flex flex-col gap-2 m-6">
                     <p className="font-bold text-cyan-dark text-lg">Account</p>
-                    <SecureField name="User Token" placeholder="abc-123..." value={userToken ?? ""} setValue={setUserToken} />
+                    <SecureField name="User Token" placeholder="abc-123..." value={userToken ?? ""} setValue={(value: string) => {
+                        window.localStorage.setItem("userToken", value)
+                        setUserToken(value)
+                    }} />
                     <p className="text-sm mx-4 text-black/80">User Tokens track viewed posts and are stored in your browser's local storage.</p>
                     <SecureField name="Access Token" placeholder="shh..." value={adminSecret ?? ""} setValue={setAdminSecret} />
                     <p className="text-sm mx-4 text-black/80">Access tokens are for administrator actions, and are not stored.</p>
@@ -171,9 +174,9 @@ export function Stack() {
             </SideBar>
             <div className="flex justify-center pt-4">
                 <div className="flex flex-col items-center gap-5 w-9/10 lg:w-275">
-                    {isLoading 
+                    {isLoading
                         ? <Loader />
-                        : doTweetsExist ? tweetBatches : <p>No Scraps found. Please try a different search.</p> }
+                        : doTweetsExist ? tweetBatches : <p>No Scraps found. Please try a different search.</p>}
                 </div>
             </div>
         </div>
