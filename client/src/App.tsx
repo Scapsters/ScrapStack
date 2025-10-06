@@ -11,8 +11,8 @@ import { API_ROOT, TrpcClient, TrpcQueryClient, queryClient } from './trpc';
 
 export default function App() {
     const isBrowser = typeof window !== 'undefined'
-    // setting this does not set the user token. This cannot be subscribed to via useSyncExternal storage because it does not fire off listeners in the window where the change originated
-    const [userToken, setUserToken] = useState(isBrowser ? window.localStorage.getItem("userToken") ?? "" : "")
+    // setting this does not set the user token in storage. This cannot be subscribed to via useSyncExternal storage because it does not fire off listeners in the window where the change originated
+    const [userToken, setUserToken] = useState(isBrowser ? window.localStorage.getItem("userToken") ?? crypto.randomUUID() : "")
     const [adminSecret, setAdminSecret] = useState("")
     const [isMuted, setIsMuted] = useState(true)
 
