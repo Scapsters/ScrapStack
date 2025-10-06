@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import { GoSearch } from "react-icons/go"
 import { Link } from "react-router-dom"
 
