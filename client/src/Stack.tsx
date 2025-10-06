@@ -75,7 +75,6 @@ export function Stack() {
     const openSearchWith = useCallback((values: typeof defaultSearchValues) => {
         setParams(values)
         resetForm(values)
-        //if (!isMobile) setIsSettingsOpen(true) // feels terrible on mobile
         setTimeout(() => setHandleStyle("bg-cyan-light!"), 300)
         setTimeout(() => setHandleStyle(""), 800)
     }, [resetForm, setParams])
@@ -99,7 +98,7 @@ export function Stack() {
         getEntryTweet,
     )
 
-    if (!setUserToken || !setAdminSecret || userToken === undefined) return (
+    if (!setUserToken || !setAdminSecret) return (
         <div className="w-full text-center mt-10">
             <div className="w-80">
                 Context Loading... This shouldn't happen, please refresh the page, then clear your browsers cache, cookies, and local storage if the issue persists.
@@ -164,7 +163,7 @@ export function Stack() {
                 <div className="bg-cyan-dark h-0.5 w-4/5 mt-8 mx-10"></div>
                 <div className="flex flex-col gap-2 m-6">
                     <p className="font-bold text-cyan-dark text-lg">Account</p>
-                    <SecureField name="User Token" placeholder="abc-123..." value={userToken} setValue={setUserToken} />
+                    <SecureField name="User Token" placeholder="abc-123..." value={userToken ?? ""} setValue={setUserToken} />
                     <p className="text-sm mx-4 text-black/80">User Tokens track viewed posts and are stored in your browser's local storage.</p>
                     <SecureField name="Access Token" placeholder="shh..." value={adminSecret ?? ""} setValue={setAdminSecret} />
                     <p className="text-sm mx-4 text-black/80">Access tokens are for administrator actions, and are not stored.</p>
