@@ -38,7 +38,7 @@ export default function StackSearch() {
                     onChange={(event) => setSearch(event.target.value)}
                     className="p-1 px-1.5 border-2 border-dark/40 rounded-md w-full"
                 />
-                <div className="flex justify-between items-center w-3/4 px-15 h-min mt-5 text-black/60">
+                <div className="flex justify-between items-center w-3/4 px-2 sm:px-15 h-min mt-5 text-black/60">
                     <p className="text-left grow">Username</p>
                     <p className="text-right">Post Count</p>
                 </div>
@@ -48,7 +48,7 @@ export default function StackSearch() {
                         <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
                     </div>
                     : searchedStacks.map((stack) => (
-                        <Link to={`/stacks/${stack.twitterHandle}`} className="flex mt-2 justify-between items-center p-2 px-15 border-1 border-dark/20 rounded-md w-3/4 h-20 text-dark hover:bg-cyan-light/50 hover:border-2">
+                        <Link to={`/stacks/${stack.twitterHandle}`} className="flex mt-2 justify-between items-center p-2 sm:px-15 border-1 border-dark/20 rounded-md w-3/4 h-12 sm:h-20 text-dark hover:bg-cyan-light/50 hover:border-2">
                             <p>{stack.twitterHandle}</p>
                             <p>{stack.postCount}</p>
                         </Link>
