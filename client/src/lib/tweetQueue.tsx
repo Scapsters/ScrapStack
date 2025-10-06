@@ -215,11 +215,11 @@ export function useTweetQueue(
     })
     useEffect(() =>
         setDoTweetsExist(true),
-        [queryName]
+        [queryName, setDoTweetsExist]
     )
 
     return [
-        virtualizeBatches(cache[queryName], scrollTop), // LETS GO virtualization
+        virtualizeBatches(cache[queryName], scrollTop),
         isLoading,
         setIsLoading
     ] as const
