@@ -14,7 +14,9 @@ const routes: RouteRecord[] = [
 		children: [
 			{
 				index: true,
-				element: <><TopBar /><LandingPage /></>
+				element: typeof window !== "undefined" && window.location.hostname == "furryslop.com"
+					? <StackSearch />
+					: <><TopBar /><LandingPage /></>
 			},
 			{
 				path: 'stacks',
