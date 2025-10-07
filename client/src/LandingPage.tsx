@@ -1,3 +1,4 @@
+import { GoChevronRight } from "react-icons/go"
 import { Link } from "react-router-dom"
 
 export function LandingPage() {
@@ -105,10 +106,25 @@ export function LandingPage() {
             </div>
 
             <div className="flex flex-col items-center w-full text-lg">
-                <Link to="/stacks" className="button text-lg p-2! bg-cyan hover:bg-cyan-light! active:bg-white text-white mt-15">
-                    See Active Stacks
+                <div className="w-full bg-light h-15 z-2"></div>
+                <Link
+                    to="/stacks"
+                    className="
+                        text-lg bg-dark square rounded-md group
+                        hover:shadow-[0px_0px_20px_20px_var(--color-dark)]
+                        hover:rounded-r-none
+                        transition-all duration-300
+                    "
+                >
+                    <div className="flex items-center  ">
+                        <p className="brand text-3xl leading-none! underline p-6">
+                            See Active Stacks 
+                        </p>
+                        <GoChevronRight size={64}  className="pr-2 text-white group-hover:translate-x-3 transition-all duration-500"/>
+                    </div>
                 </Link>
-                <div className="px-10 w-full md:w-200 text-dark">
+                <div className="w-full bg-light h-15 z-2"></div>
+                <div className="-mt-5 px-10 w-full md:w-200 text-dark">
                     <h1>Your likes, public again.</h1>
                     <p className="mt-5">
                         Give your followers and everyone else the ability to view and search your liked posts again. No
