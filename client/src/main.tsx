@@ -1,7 +1,7 @@
 import './index.css'
 import App from './App.tsx'
 import { ClientOnly, ViteReactSSG, type RouteRecord } from 'vite-react-ssg'
-import { Stack } from './Stack.tsx'
+import { StackManager } from './Stack.tsx'
 import StackSearch from './StackSearch.tsx'
 import { LandingPage } from './LandingPage.tsx'
 import { TopBar } from './components/TopBar.tsx'
@@ -24,7 +24,7 @@ const routes: RouteRecord[] = [
 			},
 			{
 				path: 'stacks/:u',
-				element: <ClientOnly>{() => <Stack />}</ClientOnly>,
+				element: <ClientOnly>{() => <StackManager />}</ClientOnly>,
 				getStaticPaths: () => ['Scappy11', "AguaralX"].map(user => `/stacks/${user}`)
 			}
 		]

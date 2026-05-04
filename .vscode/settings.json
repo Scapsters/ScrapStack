@@ -1,7 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./api/lib",
-        "./api/source"
-    ],
-    "editor.fontFamily": "'Monocraft', 'Consolas'"
-}

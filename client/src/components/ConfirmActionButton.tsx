@@ -9,7 +9,7 @@ export function ConfirmActionButton({ onClick, successMessage, failureMessage, r
     failureMessage?: string,
     requireConfirmation?: boolean,
     children: ReactNode,
-} & React.HtmlHTMLAttributes<HTMLElement>
+} & Omit<React.HtmlHTMLAttributes<HTMLElement>, "onClick">
 ) {
     const [status, setStatus] = useState<string | ReactNode>("Not Started...")
     const isTakingAction = useRef(false)

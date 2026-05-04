@@ -8,12 +8,12 @@ import {
 	MediaFullscreenButton,
 } from "media-chrome/react"
 import { useIsVisible } from "@/lib/tweetHooks"
-import { useContext, useRef, useState } from "react"
+import { useContext, useRef } from "react"
 import { playerContext } from "@/lib/playerContext"
 
 export default function Player(props: Parameters<typeof ReactPlayer>[0]) {
 
-	const [visibilityRef, setVisibilityRef] = useState<HTMLDivElement | null>(null)
+	const visibilityRef = useRef<HTMLDivElement>(null)
 	const videoRef = useRef<HTMLVideoElement>(null)
 	const [isVisible] = useIsVisible(visibilityRef)
 
@@ -21,7 +21,7 @@ export default function Player(props: Parameters<typeof ReactPlayer>[0]) {
 	
 	return (
 		<div 
-			ref={setVisibilityRef}	
+			ref={visibilityRef}	
 		>
 			<MediaController
 				className={`min-w-0 max-w-[90dvw] lg:max-w-[40dvw]`}

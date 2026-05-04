@@ -86,7 +86,7 @@ export const router = t.router({
 	getTweets: publicProcedure
 		.input(z.object({
 			tweetFilter: zTweet.partial().describe("Accepts either a plain tweet filter or a mongodb filter object"),
-			tweetSorter: z.record(zTweet.keyof(), z.literal(1).or(z.literal(-1))).default({ date_time: 1 }).describe("A record with keys of tweet properties, and values of 1 (ascending) or -1 (descending)"),
+			tweetSorter: z.tuple([zTweet.keyof(), z.literal(1).or(z.literal(-1))]).default(["date_time", 1]).describe("A tuple with a tweet property and a value of 1 (ascending) or -1 (descending)"),
 			page: z.number().min(0).default(0),
 			pageSize: z.number().max(100).min(1).default(20)
 		}))
@@ -109,7 +109,7 @@ export const router = t.router({
 						...input.tweetFilter, 
 						isBanned: input.tweetFilter.isBanned ?? false 
 					} },
-					{ $sort: Object.keys(input.tweetSorter).length == 0 ? { date_time: 1 } : input.tweetSorter }, // Cover the case of {}. Maintain default in validation for documentation
+					{ $sort: { [input.tweetSorter[0]]: input.tweetSorter[1] } }, // Cover the case of {}. Maintain default in validation for documentation
 					{
 						$facet: {
 							data: [{ $skip: (input.page) * input.pageSize }, { $limit: input.pageSize }]

@@ -122,18 +122,14 @@
   position: relative;
   overflow: hidden;
   z-index: 1;
-
 }
 
 .square::before {
-  image-rendering: auto;
   content: "";
   position: absolute;
-  inset: -50%;             /* oversize tile to cover rotation gaps */
-  background-image:
-    linear-gradient(to right, #EDE7E330 1px, transparent 1px),
-    linear-gradient(to bottom, #ede7e330 1px, transparent 1px);
-  background-size: 110.1px 110.1px;
+  inset: -20%;
+  background-image: url("/grid.svg");
+  background-size: 110px 110px;
   transform: rotate(-5deg);
   z-index: -1;
   animation: scroll 10s linear infinite;
@@ -142,7 +138,7 @@
 
 @keyframes scroll {
   from { background-position: 0 0; }
-  to   { background-position: 110.1px 110.1px; }
+  to   { background-position: 110px 110px; }
 }
 
 h1 {
