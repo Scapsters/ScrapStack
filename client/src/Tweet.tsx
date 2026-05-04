@@ -1,14 +1,125 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react"
-import { useIsVisible, usePromise, useTweet } from "./lib/tweetHooks"
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { useIsVisible, usePromise, useTweet, useTweetNew } from "./lib/tweetHooks"
 import type { TweetWithURLs } from "./lib/tweetQueue"
 import { userContext } from "./lib/userContext"
 import { ConfirmActionButton, CopyButton } from "./components/ConfirmActionButton"
 import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from "react-icons/go"
-import { defaultSearchValues } from "./Stack"
 import { Link } from "react-router-dom"
 import throttle from "lodash/throttle"
 import Loader from "./components/Loader"
 import { TrpcClient } from "./trpc"
+import { defaultSearchValues } from "./formConsts"
+
+
+export function NewTweetBatch(props: { batch: TweetWithURLs[] }) {
+    return (<>
+        {props.batch.map(tweetWithURLs => 
+            <NewTweet 
+                tweetWithURLs={tweetWithURLs}
+            />
+        )}
+    </>
+    )
+}
+
+export function NewTweet(props: { tweetWithURLs: TweetWithURLs }) {
+    const trpcClient = useContext(TrpcClient)
+
+    const tweet = props.tweetWithURLs.data
+    const [mediaElements, isLoading, markAsViewed] = useTweetNew(props.tweetWithURLs)
+
+    const linkToCopy = useMemo(() => {
+        const url = new URL(location.href)
+        url.search = ""
+        url.searchParams.set("tweet_id", tweet.tweet_id)
+        return url.toString()
+    }, [tweet.tweet_id])
+    const linkToSearch = useMemo(() => {
+        const url = new URL(location.href)
+        url.search = ""
+        url.searchParams.set("handle", tweet.handle)
+        return url.search
+    }, [tweet.handle])
+
+    const visibilityRef = useRef<HTMLDivElement>(null)
+    const [isVisible, removeListener] = useIsVisible(visibilityRef)
+    useEffect(() => {
+        if (isLoading) return
+        if (isVisible) {
+            markAsViewed()
+            removeListener()
+        }
+    }, [isLoading, isVisible, markAsViewed, removeListener])
+
+    const { adminSecret } = useContext(userContext)
+
+    if (isLoading) return (
+        <div key={props.tweetWithURLs.data.tweet_id} className="h-80 flex flex-col items-center gap-6">
+            Images Loading...
+            <GoSync size={40} className='-scale-y-100 animate-[spin_1s_linear_infinite_reverse]' />
+        </div>
+    )
+
+    return (
+        <div ref={visibilityRef} key={props.tweetWithURLs.data.tweet_id} className="border-b-1 border-black/10 w-auto py-5">
+            <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-4">
+                    <a href={tweet.tweet_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-2 border-2 border-transparent px-6 bg-white/40 rounded-md w-fit hover:bg-black/5 hover:border-2 hover:border-cyan">
+                        <img src={tweet.profile_img} className="rounded-full"></img>
+                        <div>
+                            <p className="text-black/90">{tweet.user}</p>
+                            <p className="text-black/40">{tweet.handle}</p>
+                        </div>
+                    </a>
+                </div>
+                <div className="w-4/5 text-center"> {tweet.content} </div>
+                <div className="flex gap-2 w-[90dvw] justify-center items-center flex-wrap"> {
+                    mediaElements
+                } </div>
+                <div className="w-full flex justify-center relative">
+                    {adminSecret &&
+                        <ConfirmActionButton
+                            className="absolute left-0 p-1"
+                            failureMessage='Ban failed. Check authentication?' //TODO: better errors
+                            successMessage='Post Banned.'
+                            requireConfirmation
+                            onClick={async () => {
+                                return [await trpcClient.banTweet.mutate(tweet)] satisfies [boolean]
+                            }}
+                        >
+                            <GoTrash className="text-red-700" size={28} />
+                        </ConfirmActionButton>
+                    }
+                    <div className="flex gap-8 p-1">
+                        <Link
+                            to={linkToSearch}
+                            className="button"
+                        >
+                            <GoSearch size={28} />
+                        </Link>
+                        <button
+                            onClick={() => {
+
+                            }}
+                            className="hidden button"
+                        >
+                            <GoPlus size={28} />
+                        </button>
+                        <button
+                            onClick={() => {
+
+                            }}
+                            className="hidden button"
+                        >
+                            <GoHeart size={28} />
+                        </button>
+                        <CopyButton size={28} textToCopy={linkToCopy} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwnHeight, minHeight }: {
     batchPromise: Promise<TweetWithURLs[]>,
@@ -19,40 +130,24 @@ export function TweetBatch({ batchPromise, view, dataKey, openSearchWith, setOwn
     minHeight: number
 }) {
     const [batch, isBatchLoading] = usePromise(batchPromise, [])
-    const ref = useRef<HTMLDivElement>(null)
-    const [loadedChildren, setLoadedChildren] = useState(new Array<boolean>(batch.length).fill(false))
+    const [, setLoadedChildren] = useState(new Array<boolean>(batch.length).fill(false))
 
-    // // ResizeObserver replaces old useEffect
-    // useEffect(() => {
-    //     const element = ref.current
-    //     if (!element) return
-
-    //     const observer = new ResizeObserver(entries => {
-    //         for (let entry of entries) {
-    //             const height = entry.contentRect.height
-    //             setOwnHeight(height)
-    //         }
-    //     })
-
-    //     observer.observe(element)
-    //     return () => observer.disconnect()
-    // }, [setOwnHeight])
-
-    useEffect(() => {
-        if (loadedChildren.every(c => c)) {
-            const current = ref.current
-            if (current) {
-                const height = current.getBoundingClientRect().height
-                if (height !== 1600) //default height
-                    setOwnHeight(height, true)
+    const resizeObserver = useCallback((element: HTMLDivElement | null) => {
+        const observer = new ResizeObserver(entries => 
+            entries.forEach(entry => {
+                const height = entry.target.getBoundingClientRect().height 
+                console.log(height)
+                if (height != 1600) setOwnHeight(height, true)
             }
-        }
-    }, [batch.length, loadedChildren, setOwnHeight])
+        ))
+        if (element) observer.observe(element)
+        return () => observer.disconnect()
+    }, [setOwnHeight])
 
     if (isBatchLoading) return <Loader />
 
     return (
-        <div ref={ref} className="w-full" key={dataKey} style={{ minHeight: minHeight + "px" }}>
+        <div ref={resizeObserver} className="w-full" key={dataKey} style={{ minHeight: minHeight + "px" }}>
             {batch.map((tweetWithURLs, index) =>
                 <Tweet
                     tweetWithURLs={tweetWithURLs}

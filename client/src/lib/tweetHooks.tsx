@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react"
 import type { TweetWithURLs } from "./tweetQueue"
 import Player from "@/components/Player"
 import Image from "@/components/Image"
@@ -16,6 +16,20 @@ export const useTweet = (tweet: TweetWithURLs, onImageLoad: (imageIndex: number)
         areURLsLoading,
         () => trpcClient.markTweet.mutate([tweet.data])
     ]
+}
+
+export const useTweetNew = (tweet: TweetWithURLs) => {
+    const mediaPromise = useMemo(() => Promise.all(tweet.mediaUrlBlobs), [tweet.mediaUrlBlobs])
+    const [urls, areURLsLoading] = usePromise(mediaPromise, [])
+    const trpcClient = useContext(TrpcClient)
+    
+    return [
+        urls.map(url => url.includes("mp4") || url.includes("m3u8")
+            ? <Player key={url} src={url} className="min-w-0 max-h-full rounded-lg border-1 border-black/10" />
+            : <Image key={url} src={url} />),
+        areURLsLoading,
+        () => trpcClient.markTweet.mutate([tweet.data])
+    ] as const
 }
 
 export function usePromise<T>(promise: Promise<T>, defaultValue: T): [T, boolean]
@@ -42,12 +56,13 @@ export function usePromise<T>(promise: Promise<T>, defaultValue: T | null) {
 }
 
 // https://dev.to/bcncodeschool/detecting-if-an-element-is-in-view-with-react-5b60
-export function useIsVisible(ref: HTMLElement | null) {
+export function useIsVisible(ref: RefObject<HTMLElement | null>) {
     const [isVisible, setIsVisible] = useState(false)
     const observerRef = useRef<IntersectionObserver | null>(null)
 
     useEffect(() => {
-        if (!ref)
+        const current = ref.current
+        if (!current)
             return
 
         const observer = new IntersectionObserver(([entry]) => {
@@ -58,7 +73,7 @@ export function useIsVisible(ref: HTMLElement | null) {
             threshold: 0, // trigger as soon as it touches that strip
         })
 
-        observer.observe(ref)
+        observer.observe(current)
         observerRef.current = observer
 
         return () => {
