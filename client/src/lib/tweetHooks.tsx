@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react"
 import type { TweetWithBlobs } from "./tweetQueue"
 import Player from "@/components/Player"
-import Image from "@/components/Image"
+import FullscreenableImage from "@/components/Image"
 import { TrpcClient } from "@/trpc"
 
 export const useTweet = (tweet: TweetWithBlobs) => {
@@ -12,7 +12,7 @@ export const useTweet = (tweet: TweetWithBlobs) => {
     return [
         urls.map(url => url.includes("mp4") || url.includes("m3u8")
             ? <Player key={url} src={url} className="min-w-0 max-h-full rounded-lg border-1 border-black/10" />
-            : <Image key={url} src={url} />),
+            : <FullscreenableImage key={url} src={url} />),
         areURLsLoading,
         () => trpcClient.markTweet.mutate([tweet.data])
     ] as const
