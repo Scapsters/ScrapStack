@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react"
 import type { TweetWithBlobs } from "./tweetQueue"
-import Player from "@/components/Player"
+import Player from "@/components/player/Player"
 import FullscreenableImage from "@/components/Image"
 import { TrpcClient } from "@/trpc"
 

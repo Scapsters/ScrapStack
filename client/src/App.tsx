@@ -2,7 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { Outlet } from 'react-router-dom'
 import { userContext } from './lib/userContext';
 import { useState } from 'react'
-import { playerContext } from './lib/playerContext';
+import { playerContext } from './components/player/context';
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import type { AppRouter } from '../../api/source/api/router'
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'

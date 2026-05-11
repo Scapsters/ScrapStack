@@ -9,7 +9,7 @@ import {
 } from "media-chrome/react"
 import { useIsVisible } from "@/lib/tweetHooks"
 import { useContext, useRef } from "react"
-import { playerContext } from "@/lib/playerContext"
+import { playerContext } from "@/components/player/context"
 
 export default function Player(props: Parameters<typeof ReactPlayer>[0]) {
 
