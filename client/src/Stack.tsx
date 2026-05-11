@@ -1,19 +1,16 @@
-import { useContext, useRef, useState } from 'react'
-import { useNewTweetQueue, type TweetWithURLs } from './lib/tweetQueue'
+import { useContext, useMemo, useRef } from 'react'
+import { useTweetQueue } from './lib/tweetQueue'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { ScrollAwareTopBar, TopBar } from './components/TopBar'
-import { userContext } from './lib/userContext'
 import Loader from './components/Loader'
 import { TrpcClient } from '@/trpc'
 import { getFilterFromParams, getSorterFromParams } from './formConsts'
-import { NewTweetBatch } from './Tweet'
+import { TweetBatch } from './Tweet'
 import { TweetSearch, type TweetSearchParams } from './TweetSearch'
-
-type StackCache = TweetWithURLs[]
+import { TweetCacheProvider } from './lib/tweetCache/provider'
+import { useTweetCache } from './lib/tweetCache/context'
 
 export function StackManager() {
-
-	// Simple value calculations
 	const location = useLocation()
 	const stackUsername = location.pathname.split('/').pop() ?? ''
 
@@ -22,49 +19,51 @@ export function StackManager() {
 	const tweetSorter = getSorterFromParams(params)
 	const firstTweetId = params.get('tweet_id')
 	const stackProps = { tweetFilter, tweetSorter, firstTweetId }
+	const stackKey = JSON.stringify(stackProps)
 
-	// Stack caching
-	const stackCacheMap = useState(new Map<string, StackCache>())
-
- 	return (
+	return (
 		<>
 			<TweetSearch {...stackProps} />
-			<Stack key={JSON.stringify(stackProps)} {...stackProps} />
+			<TweetCacheProvider stackKey={stackKey}>
+				<Stack key={stackKey} {...stackProps} />
+			</TweetCacheProvider>
 		</>
 	)
 }
 
-
-export function Stack({ tweetFilter, tweetSorter, firstTweetId }: TweetSearchParams & { firstTweetId: string | null }) {
+export function Stack({
+	tweetFilter,
+	tweetSorter,
+	firstTweetId,
+}: TweetSearchParams & {
+	firstTweetId: string | null
+}) {
 	const trpcClient = useContext(TrpcClient)
-	const { setUserToken, setAdminSecret } = useContext(userContext)
-	const location = useLocation()
 
+	const location = useLocation()
 	const stackUsername = location.pathname.split('/').pop() ?? ''
 
-	const getFirstTweet = firstTweetId
-		? () => trpcClient.getTweets.query({ tweetFilter: { tweet_id: firstTweetId } })
-		: null
+	// While changes to the filter, sorter, and first tweet will cause component remounts and seem to make this useMemo unneccesary,
+	// changes to the tweet cache or other rerenders will cause component re-evaluations, making the functions' values unstable.
+	const [getFirstTweet, getNextTweet] = useMemo(() => {
+		const getFirstTweet = firstTweetId
+			? () => trpcClient.getTweets.query({ tweetFilter: { tweet_id: firstTweetId } })
+			: null
 
-	const isQueryingRandom = Object.keys(tweetFilter).length === 1 && !tweetSorter
-	const getNextTweet = (page: number) =>
-		isQueryingRandom
-			? trpcClient.getRandomUnviewedTweets.query({ stackUsername: stackUsername })
-			: trpcClient.getTweets.query({ tweetFilter, tweetSorter, page })
+		const isQueryingRandom = Object.keys(tweetFilter).length === 1 && !tweetSorter
+		const getNextTweet = (page: number) =>
+			isQueryingRandom
+				? trpcClient.getRandomUnviewedTweets.query({ stackUsername: stackUsername })
+				: trpcClient.getTweets.query({ tweetFilter, tweetSorter, page })
 
+		return [getFirstTweet, getNextTweet]
+	}, [firstTweetId, stackUsername, trpcClient, tweetFilter, tweetSorter])
+
+	
 	const ref = useRef<HTMLDivElement>(null)
-	const [tweetBatches, isLoading] = useNewTweetQueue(getFirstTweet, getNextTweet, ref)
-
-	if (!setUserToken || !setAdminSecret)
-		return (
-			<div className="w-full text-center mt-10">
-				<div className="w-80">
-					Context had a problem loading. please refresh the page, then clear your browsers cache, cookies, and
-					local storage if the issue persists.
-				</div>
-			</div>
-		)
-
+	const isLoading = useTweetQueue(getFirstTweet, getNextTweet, ref)
+	const { tweetBatches } = useTweetCache()
+	
 	const centerText = `${stackUsername}${stackUsername.endsWith('s') ? "'" : "'s"} Stack`
 
 	return (
@@ -76,7 +75,7 @@ export function Stack({ tweetFilter, tweetSorter, firstTweetId }: TweetSearchPar
 					{isLoading ? (
 						<Loader />
 					) : tweetBatches.length > 0 ? (
-						tweetBatches.map(batch => <NewTweetBatch batch={batch} />)
+						tweetBatches.map(batch => <TweetBatch batch={batch} />)
 					) : (
 						<p>No Scraps found. Please try a different search.</p>
 					)}

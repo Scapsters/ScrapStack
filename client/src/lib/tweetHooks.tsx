@@ -1,25 +1,11 @@
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react"
-import type { TweetWithURLs } from "./tweetQueue"
+import type { TweetWithBlobs } from "./tweetQueue"
 import Player from "@/components/Player"
 import Image from "@/components/Image"
 import { TrpcClient } from "@/trpc"
 
-export const useTweet = (tweet: TweetWithURLs, onImageLoad: (imageIndex: number) => void): [React.ReactNode[], boolean, () => void] => {
-    const mediaPromise = useMemo(() => Promise.all(tweet.mediaUrlBlobs), [tweet.mediaUrlBlobs])
-    const [urls, areURLsLoading] = usePromise(mediaPromise, [])
-    const trpcClient = useContext(TrpcClient)
-    
-    return [
-        urls.map((url, index) => url.includes("mp4") || url.includes("m3u8")
-            ? <Player key={url} src={url} onLoadedData={() => onImageLoad(index)} className="min-w-0 max-h-full rounded-lg border-1 border-black/10" />
-            : <Image key={url} onLoad={() => onImageLoad(index)} src={url} />),
-        areURLsLoading,
-        () => trpcClient.markTweet.mutate([tweet.data])
-    ]
-}
-
-export const useTweetNew = (tweet: TweetWithURLs) => {
-    const mediaPromise = useMemo(() => Promise.all(tweet.mediaUrlBlobs), [tweet.mediaUrlBlobs])
+export const useTweet = (tweet: TweetWithBlobs) => {
+    const mediaPromise = useMemo(() => Promise.all(tweet.blobs), [tweet.blobs])
     const [urls, areURLsLoading] = usePromise(mediaPromise, [])
     const trpcClient = useContext(TrpcClient)
     

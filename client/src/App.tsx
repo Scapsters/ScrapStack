@@ -1,5 +1,4 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import './App.css'
 import { Outlet } from 'react-router-dom'
 import { userContext } from './lib/userContext';
 import { useState } from 'react'

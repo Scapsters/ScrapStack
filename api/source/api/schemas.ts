@@ -4,6 +4,15 @@ import z from "zod"
 const zObjectId = z.union([z.instanceof(ObjectId), z.string().regex(/^[0-9a-fA-F]{24}$/)])
   .transform(val => val instanceof ObjectId ? val : new ObjectId(val));
 
+/* 
+ * Note on UserClient vs. User 
+ *
+ * In terms of the patterns in this file, z.input<typeof zX> is nearly identical to z.infer<typeof zX>
+ * The only difference is that z.infer outputs the exact types (_id is always an ObjectId) and 
+ * z.input outputs what is needed to create those types (Because mongodb could easily turn a string into an ObjectId, _id is either ObjectId or string)
+ * To use the z.infer in the frontend would require some crazy cryptography package to satisfy monogdb, so that is why the input one is for usage in the frontend.
+ */
+
 export const zUserSchema = z.object({
   userToken: z.string(),
   viewedPosts: z.array(zObjectId),

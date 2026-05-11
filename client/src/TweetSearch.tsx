@@ -1,17 +1,17 @@
 import type { TweetSchema } from '../../api/source/api/schemas'
 import { Field, Label, Input, RadioGroup, Radio } from '@headlessui/react'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useSearchParams, type URLSearchParamsInit } from 'react-router-dom'
 import { SecureField } from './components/SecureField'
 import { defaultSearchValues } from './formConsts'
-import { userContext } from './lib/userContext'
+import { useUserContext } from './lib/userContext'
 import { SideBar } from './components/Sidebar'
 
 export type TweetSearchParams = { tweetFilter: Partial<TweetSchema>; tweetSorter?: [keyof TweetSchema, 1 | -1] }
 
 export function TweetSearch({ tweetFilter, tweetSorter }: TweetSearchParams) {
-	const { userToken, setUserToken, adminSecret, setAdminSecret } = useContext(userContext)
+	const { userToken, setUserToken, adminSecret, setAdminSecret } = useUserContext()
 	const [, setParams] = useSearchParams()
 
 	const { getValues, register } = useForm<typeof defaultSearchValues>({
@@ -21,8 +21,6 @@ export function TweetSearch({ tweetFilter, tweetSorter }: TweetSearchParams) {
 	const [formSortDirection, setFormSortDirection] = useState<1 | -1>(tweetSorter?.[1] || 1)
 
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-
-	if (!setUserToken || !setAdminSecret) throw Error('No user context!')
 
 	return (
 		<SideBar isOpen={isSettingsOpen} setIsOpen={setIsSettingsOpen}>

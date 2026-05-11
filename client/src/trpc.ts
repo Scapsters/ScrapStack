@@ -1,7 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 import type { AppRouter } from '../../api/source/api/router'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
-import './App.css'
 import { createContext } from 'react'
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query';
 

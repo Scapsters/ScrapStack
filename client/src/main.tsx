@@ -32,3 +32,56 @@ const routes: RouteRecord[] = [
 ]
 
 export const createRoot = ViteReactSSG({ routes })
+
+// import './index.css'
+// import { StrictMode } from 'react'
+// import { createRoot } from 'react-dom/client'
+// import {
+// 	createBrowserRouter,
+// 	RouterProvider,
+// } from 'react-router-dom'
+
+// import App from './App.tsx'
+// import { StackManager } from './Stack.tsx'
+// import StackSearch from './StackSearch.tsx'
+// import { LandingPage } from './LandingPage.tsx'
+// import { TopBar } from './components/TopBar.tsx'
+
+// if (typeof document !== 'undefined') {
+// 	const router = createBrowserRouter([
+// 	{
+// 		path: '/',
+// 		element: (
+// 			<StrictMode>
+// 				<App />
+// 			</StrictMode>
+// 		),
+// 		children: [
+// 			{
+// 				index: true,
+// 				element:
+// 					window.location.hostname === 'furryslop.com'
+// 						? <StackSearch />
+// 						: (
+// 							<>
+// 								<TopBar />
+// 								<LandingPage />
+// 							</>
+// 						),
+// 			},
+// 			{
+// 				path: 'stacks',
+// 				element: <StackSearch />,
+// 			},
+// 			{
+// 				path: 'stacks/:u',
+// 				element: <StackManager />,
+// 			},
+// 		],
+// 	},
+// ])
+
+// 	createRoot(document.getElementById('root')!).render(
+// 		<RouterProvider router={router} />
+// 	)
+// }

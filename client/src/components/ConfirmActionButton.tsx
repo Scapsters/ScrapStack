@@ -1,119 +1,138 @@
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react"
-import { TRPCClientError } from "@trpc/client"
-import { useCallback, useRef, useState, type ReactNode } from "react"
-import { GoCheck, GoCopy, GoX } from "react-icons/go"
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
+import { useRef, useState, type ReactNode } from 'react'
+import { GoCheck, GoCopy, GoX } from 'react-icons/go'
 
-export function ConfirmActionButton({ onClick, successMessage, failureMessage, requireConfirmation, children, ...props }: {
-    onClick: () => Promise<[boolean, string?]>,
-    successMessage?: string,
-    failureMessage?: string,
-    requireConfirmation?: boolean,
-    children: ReactNode,
-} & Omit<React.HtmlHTMLAttributes<HTMLElement>, "onClick">
-) {
-    const [status, setStatus] = useState<string | ReactNode>("Not Started...")
-    const isTakingAction = useRef(false)
-    const closingTimeout = useRef<NodeJS.Timeout | null>(null)
+export function ConfirmActionButton({
+	onClick,
+	successMessage,
+	failureMessage,
+	requireConfirmation,
+	children,
+	...props
+}: {
+	onClick: () => Promise<void | boolean>
+	successMessage?: string
+	failureMessage?: string
+	requireConfirmation?: boolean
+	children: ReactNode
+} & Omit<React.HtmlHTMLAttributes<HTMLElement>, 'onClick'>) {
+	const [status, setStatus] = useState<string | ReactNode>('Not Started...')
+	const isTakingAction = useRef(false)
+	const closingTimeout = useRef<NodeJS.Timeout | null>(null)
 
-    const takeAction = useCallback(
-        async function takeAction(close: () => void) {
-            isTakingAction.current = true
-            void new Promise<boolean>(resolve => {
-                if (requireConfirmation)
-                    setStatus(
-                        <div className="flex flex-col items-center">
-                            <p>Are you sure?</p>
-                            <div className="flex">
-                                <button className="button" onClick={() => resolve(true)}><GoCheck size={28}></GoCheck></button>
-                                <button className="button" onClick={() => resolve(false)}><GoX size={28}></GoX></button>
-                            </div>
-                        </div>
-                    )
-                else resolve(true)
-            }).then((doContinue) => {
-                const closeLater = () => {
-                    closingTimeout.current = setTimeout(() => {
-                        isTakingAction.current = false
-                        close()
-                    }, 800)
-                }
-                if (!doContinue) {
-                    setStatus("Action cancelled.")
-                    closeLater()
-                } else {
-                    setStatus("Loading...")
-                    onClick().then(ok => {
-                        setStatus(ok ? successMessage || "Success!" : failureMessage || "Failure.")
-                        closeLater()
-                    }).catch(err => {
-                        if (err instanceof TRPCClientError) setStatus(err.message)
-                        else setStatus(err)
-                    })
-                }
-            })
-        }, [failureMessage, onClick, requireConfirmation, successMessage])
+	const closeLater = (close: () => void) => {
+		closingTimeout.current = setTimeout(() => {
+			isTakingAction.current = false
+			close()
+		}, 800)
+	}
 
-    return (
-        <Popover
-            className={props.className ?? ""}
-        >
-            {({ open }) => {
-                return <>
-                    <PopoverButton
-                        className={"button data-active:bg-cyan-light!"}
-                        onClick={() => {
-                            isTakingAction.current = false
-                            if (closingTimeout.current) {
-                                clearTimeout(closingTimeout.current)
-                            }
-                        }}
-                    >
-                        {children}
-                    </PopoverButton>
-                    <PopoverPanel transition anchor="top">
-                        {({ close }) => {
-                            if (open && !isTakingAction.current) takeAction(close)
-                            return (
-                                <div className="flex flex-col items-center mb-1">
-                                    <div className="p-2 px-6 w-max bg-white rounded-md border-2 border-cyan-dark z-14">{status}</div>
-                                    <div className="relative z-14">
-                                        <div className="top-1 w-0 h-0 z-12
+	const createConfirmationPopup = (confirm: (doContinue: boolean) => void) => (
+		<div className="flex flex-col items-center">
+			<p>Are you sure?</p>
+			<div className="flex">
+				<button className="button" onClick={() => confirm(true)}>
+					<GoCheck size={28}></GoCheck>
+				</button>
+				<button className="button" onClick={() => confirm(false)}>
+					<GoX size={28}></GoX>
+				</button>
+			</div>
+		</div>
+	)
+
+	async function takeAction(close: () => void) {
+		isTakingAction.current = true
+		const doContinue = await new Promise<boolean>(resolve => {
+			if (requireConfirmation) setStatus(createConfirmationPopup(resolve))
+			else resolve(true)
+		})
+		if (!doContinue) {
+			setStatus('Action cancelled.')
+			closeLater(close)
+			return
+		}
+		setStatus('Loading...')
+		onClick()
+			.then(ok => {
+				if (!ok) throw new Error("Confirm action button onClick had a non-ok result")
+				setStatus(successMessage || 'Success!')
+				closeLater(close)
+			})
+			.catch(err => {
+				console.error(err)
+				setStatus(failureMessage || 'Failed.')
+			})
+	}
+
+	return (
+		<Popover className={props.className ?? ''}>
+			{({ open }) => {
+				return (
+					<>
+						<PopoverButton
+							className={'button data-active:bg-cyan-light!'}
+							onClick={() => {
+								isTakingAction.current = false
+								if (closingTimeout.current) {
+									clearTimeout(closingTimeout.current)
+								}
+							}}
+						>
+							{children}
+						</PopoverButton>
+						<PopoverPanel transition anchor="top">
+							{({ close }) => {
+								if (open && !isTakingAction.current) takeAction(close)
+								return (
+									<div className="flex flex-col items-center mb-1">
+										<div className="p-2 px-6 w-max bg-white rounded-md border-2 border-cyan-dark z-14">
+											{status}
+										</div>
+										<div className="relative z-14">
+											<div
+												className="top-1 w-0 h-0 z-12
                                             border-l-10 border-l-transparent
                                             border-t-10 border-t-transparent
-                                            border-r-10 border-r-transparent">
-                                        </div>
-                                        <div className="absolute -left-[2px] -top-[1px] w-0 h-0 z-12
+                                            border-r-10 border-r-transparent"
+											></div>
+											<div
+												className="absolute -left-[2px] -top-[1px] w-0 h-0 z-12
                                             border-l-12 border-l-transparent
                                             border-t-12 border-t-cyan-dark
-                                            border-r-12 border-r-transparent">
-                                        </div>
-                                        <div className="absolute -top-0.5 w-0 h-0 z-12
+                                            border-r-12 border-r-transparent"
+											></div>
+											<div
+												className="absolute -top-0.5 w-0 h-0 z-12
                                             border-l-10 border-l-transparent
                                             border-t-10 border-t-white
-                                            border-r-10 border-r-transparent">
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        }}
-                    </PopoverPanel>
-                </>
-            }}
-        </Popover>
-    )
+                                            border-r-10 border-r-transparent"
+											></div>
+										</div>
+									</div>
+								)
+							}}
+						</PopoverPanel>
+					</>
+				)
+			}}
+		</Popover>
+	)
 }
 
-export function CopyButton({ size, textToCopy, ...props }: { size: number, textToCopy: string } & React.HtmlHTMLAttributes<HTMLElement>) {
-    return (
-        <ConfirmActionButton
-            {...props}
-            successMessage='Copied!'
-            failureMessage='Unable to copy. Check browser permissions.'
-            onClick={async () => {
-                await navigator.clipboard.writeText(textToCopy)
-                return [true] satisfies [boolean]
-            }}
-        ><GoCopy size={size} className="text-black active:stroke-black" />
-        </ConfirmActionButton>
-    )
+export function CopyButton({
+	size,
+	textToCopy,
+	...props
+}: { size: number; textToCopy: string } & React.HtmlHTMLAttributes<HTMLElement>) {
+	return (
+		<ConfirmActionButton
+			{...props}
+			successMessage="Copied!"
+			failureMessage="Unable to copy. Check browser permissions."
+			onClick={() => navigator.clipboard.writeText(textToCopy)}
+		>
+			<GoCopy size={size} className="text-black active:stroke-black" />
+		</ConfirmActionButton>
+	)
 }
