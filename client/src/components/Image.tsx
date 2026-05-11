@@ -5,22 +5,6 @@ export default function Image({ ...props }: React.ImgHTMLAttributes<HTMLImageEle
 
     const imageRef = useRef<HTMLImageElement>(null)
     const ref = useRef<HTMLDivElement>(null)
-    const [height, setHeight] = useState(0)
-    const [width, setWidth] = useState(0)
-
-    useEffect(() => {
-        if (!imageRef.current) return
-
-        const resizeObserver = new ResizeObserver(([entry]) => {
-            const newHeight = entry.contentRect.height
-            const newWidth = entry.contentRect.width
-            setHeight(height => newHeight > height ? newHeight : height)
-            setWidth(width => newWidth > width ? newWidth : width)
-        })
-
-        resizeObserver.observe(imageRef.current)
-        return () => resizeObserver.disconnect()
-    }, [])
 
     useEffect(() => {
         const current = ref.current
@@ -44,10 +28,6 @@ export default function Image({ ...props }: React.ImgHTMLAttributes<HTMLImageEle
                 : `hidden`
             }>
             </div>
-            <div
-                className={`${fullscreen ? "m-[1px] border-transparent" : "hidden"} -z-10`}
-                style={{ height: height + "px", width: width + "px" }}
-            />
             <img
                 ref={imageRef}
                 {...props}
