@@ -7,8 +7,10 @@ import { TrpcClient } from '@/trpc'
 import { getFilterFromParams, getSorterFromParams } from './formConsts'
 import { TweetBatch } from './Tweet'
 import { TweetSearch, type TweetSearchParams } from './TweetSearch'
-import { TweetCacheProvider } from './lib/tweetCache/provider'
-import { useTweetCache } from './lib/tweetCache/context'
+import { TweetCacheProvider } from './lib/tweetCache/TweetCacheProvider'
+import { useTweetCache } from './lib/tweetCache/contexts'
+import { VirtualizerProvider } from './lib/virtualizer/VirtualizerProvider'
+import { VirtualizedItemProvider } from './lib/virtualizer/VirtualizedItemProvider'
 
 export function StackManager() {
 	const location = useLocation()
@@ -43,8 +45,6 @@ export function Stack({
 	const location = useLocation()
 	const stackUsername = location.pathname.split('/').pop() ?? ''
 
-	// While changes to the filter, sorter, and first tweet will cause component remounts and seem to make this useMemo unneccesary,
-	// changes to the tweet cache or other rerenders will cause component re-evaluations, making the functions' values unstable.
 	const [getFirstTweet, getNextTweet] = useMemo(() => {
 		const getFirstTweet = firstTweetId
 			? () => trpcClient.getTweets.query({ tweetFilter: { tweet_id: firstTweetId } })
@@ -59,25 +59,30 @@ export function Stack({
 		return [getFirstTweet, getNextTweet]
 	}, [firstTweetId, stackUsername, trpcClient, tweetFilter, tweetSorter])
 
-	
 	const ref = useRef<HTMLDivElement>(null)
 	const isLoading = useTweetQueue(getFirstTweet, getNextTweet, ref)
 	const { tweetBatches } = useTweetCache()
-	
+
 	const centerText = `${stackUsername}${stackUsername.endsWith('s') ? "'" : "'s"} Stack`
 
 	return (
 		<div ref={ref}>
 			<ScrollAwareTopBar centerText={centerText} />
 			<TopBar centerText={centerText} className={typeof window === 'undefined' ? 'visible' : 'invisible'} />
-			<div className="flex justify-center pt-4">
+			<div className="flex justify-center">
 				<div className="flex flex-col items-center gap-5 w-9/10 lg:w-275">
 					{isLoading ? (
 						<Loader />
-					) : tweetBatches.length > 0 ? (
-						tweetBatches.map(batch => <TweetBatch batch={batch} />)
-					) : (
+					) : tweetBatches.length <= 0 ? (
 						<p>No Scraps found. Please try a different search.</p>
+					) : (
+						<VirtualizerProvider>
+							{tweetBatches.map(batch => (
+								<VirtualizedItemProvider virtualizationKey={batch.map(tweet => tweet.data.tweet_id).reduce((prev, curr) => `${prev}${curr}`)}>
+									<TweetBatch batch={batch} />
+								</VirtualizedItemProvider>
+							))}
+						</VirtualizerProvider>
 					)}
 				</div>
 			</div>

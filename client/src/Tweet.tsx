@@ -6,14 +6,15 @@ import { ConfirmActionButton, CopyButton } from './components/ConfirmActionButto
 import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from 'react-icons/go'
 import { Link } from 'react-router-dom'
 import { TrpcClient } from './trpc'
+import { useVirtualizedItemContext } from './lib/virtualizer/contexts'
 
 export function TweetBatch(props: { batch: TweetWithBlobs[] }) {
 	return (
-		<>
+		<div className="flex flex-col gap-5">
 			{props.batch.map(tweetWithURLs => (
 				<Tweet key={tweetWithURLs.data.tweet_id} tweetWithURLs={tweetWithURLs} />
 			))}
-		</>
+		</div>
 	)
 }
 
@@ -21,7 +22,9 @@ export function Tweet(props: { tweetWithURLs: TweetWithBlobs }) {
 	const trpcClient = useContext(TrpcClient)
 
 	const tweet = props.tweetWithURLs.data
-	const [mediaElements, isLoading, markAsViewed] = useTweet(props.tweetWithURLs)
+
+	const { markAsStable } = useVirtualizedItemContext()
+	const [mediaElements, isLoading, markAsViewed] = useTweet(props.tweetWithURLs, markAsStable)
 
 	const linkToCopy = useMemo(() => {
 		const url = new URL(location.href)

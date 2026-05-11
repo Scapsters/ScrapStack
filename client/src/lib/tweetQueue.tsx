@@ -8,7 +8,7 @@ import {
 import type { TweetClient } from '../../../api/source/api/schemas'
 import { defaultTrpcClient } from '../trpc'
 import throttle from 'lodash/throttle'
-import { useTweetCache } from './tweetCache/context'
+import { useTweetCache } from './tweetCache/contexts'
 
 type TweetQuery = ReturnType<typeof defaultTrpcClient.getTweets.query>
 export type TweetWithBlobs = {
