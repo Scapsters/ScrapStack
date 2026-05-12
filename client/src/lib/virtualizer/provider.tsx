@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { VirtualizerContext } from './contexts'
+import { useStackKey } from '../stackKey/contexts'
 
 export type VirtualElementInfo = {
 	element: HTMLElement
@@ -10,7 +11,8 @@ export type VirtualElementInfo = {
 export type VirtualElementMap = Map<string, VirtualElementInfo>
 
 export function VirtualizerProvider({ children }: { children: ReactNode }) {
-	const [virtualElements, setVirtualElements] = useState<VirtualElementMap>(new Map())
+	const [virtualElementMaps, setVirtualElementMaps] = useState<Map<string, VirtualElementMap>>(new Map())
+	const { stackKey } = useStackKey()
 
 	const mergeVirtualElementsAtKey = useMemo(() => {
 		const getFallbackVirtualizerElement = (element: HTMLElement) => ({
@@ -19,17 +21,20 @@ export function VirtualizerProvider({ children }: { children: ReactNode }) {
 			isStable: false,
 		})
 		return (key: string, element: HTMLElement, virtualElementInfo: Partial<VirtualElementInfo>) =>
-			setVirtualElements(prev =>
-				new Map(prev).set(key, {
-					...getFallbackVirtualizerElement(element),
-					...prev.get(key),
-					...virtualElementInfo,
-				})
+			setVirtualElementMaps(prev =>
+				new Map(prev).set(
+					stackKey,
+					new Map(prev.get(stackKey)).set(key, {
+						...getFallbackVirtualizerElement(element),
+						...prev.get(stackKey)?.get(key),
+						...virtualElementInfo,
+					})
+				)
 			)
-	}, [])
+	}, [stackKey])
 
 	return (
-		<VirtualizerContext.Provider value={{ virtualElements, mergeVirtualElementsAtKey }}>
+		<VirtualizerContext.Provider value={{ virtualElements: virtualElementMaps.get(stackKey) ?? new Map(), mergeVirtualElementsAtKey }}>
 			{children}
 		</VirtualizerContext.Provider>
 	)

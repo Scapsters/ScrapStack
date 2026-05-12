@@ -1,10 +1,4 @@
-import {
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-	type RefObject,
-} from 'react'
+import { useCallback, useEffect, useRef, type RefObject } from 'react'
 import type { TweetClient } from '../../../api/source/api/schemas'
 import { defaultTrpcClient } from '../trpc'
 import throttle from 'lodash/throttle'
@@ -21,35 +15,36 @@ export function useTweetQueue(
 	getNextTweet: (batchIndex: number) => TweetQuery,
 	stackRef: RefObject<HTMLDivElement | null>
 ) {
-	const { addTweetBatch } = useTweetCache()
-	const [isLoading, setIsLoading] = useState(true)
+	const { addTweetBatch, setIsLoading } = useTweetCache()
 	const batchIndexRef = useRef(0)
 
 	// Tweet-adding functions
-	const addBatchToBatches = useCallback((batch: Awaited<ReturnType<typeof getNextTweet>>) => {
-		setIsLoading(false)
-		const batchWithBlobs = batch.map(data => ({
-			data,
-			blobs: getMediaBlobs(data),
-		})) satisfies TweetWithBlobs[]
-		addTweetBatch(batchWithBlobs)
-	}, [addTweetBatch])
+	const addBatchToBatches = useCallback(
+		(batch: Awaited<ReturnType<typeof getNextTweet>>) => {
+			setIsLoading(false)
+			const batchWithBlobs = batch.map(data => ({
+				data,
+				blobs: getMediaBlobs(data),
+			})) satisfies TweetWithBlobs[]
+			addTweetBatch(batchWithBlobs)
+		},
+		[addTweetBatch, setIsLoading]
+	)
 
 	const loadMoreTweets = useCallback(() => {
 		getNextTweet(batchIndexRef.current++).then(addBatchToBatches)
 	}, [addBatchToBatches, getNextTweet])
 
-	// On load
-	const hasLoadedInitialTweets = useRef(false)
+	// On first load
+	const { hasLoadedInitialTweetsRef } = useTweetCache()
 	const loadInitialTweets = useCallback(async () => {
-		if (hasLoadedInitialTweets.current) return
+		if (hasLoadedInitialTweetsRef.current) return
 
 		await getFirstTweet?.().then(addBatchToBatches)
 		loadMoreTweets()
-		hasLoadedInitialTweets.current = true
-
-	}, [addBatchToBatches, getFirstTweet, loadMoreTweets])
-	useEffect(() => void loadInitialTweets(), [loadInitialTweets]) 
+		hasLoadedInitialTweetsRef.current = true
+	}, [addBatchToBatches, getFirstTweet, hasLoadedInitialTweetsRef, loadMoreTweets])
+	useEffect(() => void loadInitialTweets(), [loadInitialTweets])
 
 	// Load on scroll
 	useEffect(() => {
@@ -67,7 +62,8 @@ export function useTweetQueue(
 		return () => window.removeEventListener('scroll', handleScroll)
 	}, [loadMoreTweets, stackRef])
 
-	return isLoading
+	const { tweetBatches, isLoading } = useTweetCache()
+	return [tweetBatches, isLoading] as const
 }
 
 function getMediaBlobs(tweet: Awaited<TweetQuery>[number]) {

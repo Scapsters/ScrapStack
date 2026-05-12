@@ -1,10 +1,15 @@
 import { createUseContext } from "../contexts"
 import type { TweetWithBlobs } from "../tweetQueue"
-import { createContext } from "react"
+import { createContext, type Dispatch, type SetStateAction } from "react"
 
-export const TweetCacheContext = createContext<{
+export type TweetCacheStore = {
     tweetBatches: TweetWithBlobs[][]
     addTweetBatch: (tweetBatch: TweetWithBlobs[]) => void
-} | null>(null)
+    hasLoadedInitialTweetsRef: React.RefObject<boolean>
+    isLoading: boolean
+    setIsLoading: Dispatch<SetStateAction<boolean>>
+}
+
+export const TweetCacheContext = createContext<TweetCacheStore | null>(null)
 
 export const useTweetCache = createUseContext(TweetCacheContext)

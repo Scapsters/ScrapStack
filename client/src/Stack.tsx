@@ -7,10 +7,11 @@ import { TrpcClient } from '@/trpc'
 import { getFilterFromParams, getSorterFromParams } from './formConsts'
 import { TweetBatch } from './Tweet'
 import { TweetSearch, type TweetSearchParams } from './TweetSearch'
-import { TweetCacheProvider } from './lib/tweetCache/TweetCacheProvider'
-import { useTweetCache } from './lib/tweetCache/contexts'
-import { VirtualizerProvider } from './lib/virtualizer/VirtualizerProvider'
+import { TweetCacheProvider } from './lib/tweetCache/provider'
+import { VirtualizerProvider } from './lib/virtualizer/provider'
 import { VirtualizedItemProvider } from './lib/virtualizer/VirtualizedItemProvider'
+import { ScrollRestorationProvider } from './lib/scrollRestoration/provider'
+import { StackKeyProvider } from './lib/stackKey/provider'
 
 export function StackManager() {
 	const location = useLocation()
@@ -26,9 +27,15 @@ export function StackManager() {
 	return (
 		<>
 			<TweetSearch {...stackProps} />
-			<TweetCacheProvider stackKey={stackKey}>
-				<Stack key={stackKey} {...stackProps} />
-			</TweetCacheProvider>
+			<StackKeyProvider stackKey={stackKey}>
+				<TweetCacheProvider>
+					<VirtualizerProvider>
+						<ScrollRestorationProvider>
+							<Stack key={stackKey} {...stackProps} />
+						</ScrollRestorationProvider>
+					</VirtualizerProvider>
+				</TweetCacheProvider>
+			</StackKeyProvider>
 		</>
 	)
 }
@@ -60,8 +67,7 @@ export function Stack({
 	}, [firstTweetId, stackUsername, trpcClient, tweetFilter, tweetSorter])
 
 	const ref = useRef<HTMLDivElement>(null)
-	const isLoading = useTweetQueue(getFirstTweet, getNextTweet, ref)
-	const { tweetBatches } = useTweetCache()
+	const [tweetBatches, isLoading] = useTweetQueue(getFirstTweet, getNextTweet, ref)
 
 	const centerText = `${stackUsername}${stackUsername.endsWith('s') ? "'" : "'s"} Stack`
 
@@ -76,13 +82,13 @@ export function Stack({
 					) : tweetBatches.length <= 0 ? (
 						<p>No Scraps found. Please try a different search.</p>
 					) : (
-						<VirtualizerProvider>
-							{tweetBatches.map(batch => (
-								<VirtualizedItemProvider virtualizationKey={batch.map(tweet => tweet.data.tweet_id).reduce((prev, curr) => `${prev}${curr}`)}>
-									<TweetBatch batch={batch} />
-								</VirtualizedItemProvider>
-							))}
-						</VirtualizerProvider>
+						tweetBatches.map(batch => (
+							<VirtualizedItemProvider
+								virtualizationKey={batch.map(tweet => tweet.data.tweet_id).join(':')}
+							>
+								<TweetBatch batch={batch} />
+							</VirtualizedItemProvider>
+						))
 					)}
 				</div>
 			</div>

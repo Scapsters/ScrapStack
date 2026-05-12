@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useVirtualizer, VirtualizedItemContext } from './contexts'
 import { useIsVisible } from '../tweetHooks'
-import type { VirtualElementInfo } from './VirtualizerProvider'
+import type { VirtualElementInfo } from './provider'
 
 export function VirtualizedItemProvider({
 	virtualizationKey,

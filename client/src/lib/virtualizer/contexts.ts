@@ -1,12 +1,14 @@
 import { createContext } from 'react'
 import { createUseContext } from '../contexts'
-import type { VirtualElementInfo, VirtualElementMap } from './VirtualizerProvider'
+import type { VirtualElementInfo, VirtualElementMap } from './provider'
 
-export const VirtualizerContext = createContext<{
+export type VirtualizerStore = {
 	virtualElements: VirtualElementMap
 	mergeVirtualElementsAtKey: (key: string, element: HTMLElement, virtualElementInfo: Partial<VirtualElementInfo>) => void
-} | null>(null)
+}
+export const VirtualizerContext = createContext<VirtualizerStore | null>(null)
 export const useVirtualizer = createUseContext(VirtualizerContext)
+
 
 export const VirtualizedItemContext = createContext<{ markAsStable: () => void } | null>(null)
 export const useVirtualizedItemContext = createUseContext(VirtualizedItemContext)
