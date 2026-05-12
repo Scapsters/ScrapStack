@@ -10,7 +10,7 @@ import { useVirtualizedItemContext } from './lib/virtualizer/contexts'
 
 export function TweetBatch(props: { batch: TweetWithBlobs[] }) {
 	return (
-		<div className="flex flex-col gap-5">
+		<div ref={useVirtualizedItemContext().registerElement} className="flex flex-col gap-5">
 			{props.batch.map(tweetWithURLs => (
 				<Tweet key={tweetWithURLs.data.tweet_id} tweetWithURLs={tweetWithURLs} />
 			))}

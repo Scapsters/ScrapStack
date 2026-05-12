@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { useVirtualizer, VirtualizedItemContext } from './contexts'
 import { useIsVisible } from '../tweetHooks'
 import type { VirtualElementInfo } from './provider'
@@ -19,18 +19,20 @@ export function VirtualizedItemProvider({
 		if (batch) mergeVirtualElementsAtKey(virtualizationKey, batch, { isStable: true })
 	}
 
-	useEffect(() => {
-		const batch = batchRef.current
-		if (!batch) return
+	const cleanupRef = useRef<() => void>(null)
+	const registerElement = (element: HTMLElement | null) => {
+		cleanupRef.current?.()
+		cleanupRef.current = null
+
+		if (!element) return
 
 		const updateSize = () =>
-			mergeVirtualElementsAtKey(virtualizationKey, batch, { size: batch.getBoundingClientRect() })
+			mergeVirtualElementsAtKey(virtualizationKey, element, { size: element.getBoundingClientRect() })
 
 		const observer = new ResizeObserver(updateSize)
-
-		observer.observe(batch)
-		return () => observer.unobserve(batch)
-	}, [mergeVirtualElementsAtKey, virtualizationKey])
+		observer.observe(element)
+		cleanupRef.current = () => observer.disconnect()
+	}
 
 	const [isVisible] = useIsVisible(batchRef, true)
 
@@ -39,7 +41,7 @@ export function VirtualizedItemProvider({
 			ref={batchRef}
 			className="flex flex-col gap-5"
 		>
-			<VirtualizedItemContext.Provider value={{ markAsStable }}>
+			<VirtualizedItemContext.Provider value={{ markAsStable, registerElement }}>
 				{virtualElements.get(virtualizationKey)?.isStable && !isVisible ? (
 					<Virtualized virtualElementInfo={virtualElements.get(virtualizationKey)} />
 				) : (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { ScrollRestorationContext } from './contexts'
 import { useStackKey } from '../stackKey/contexts'
 
@@ -8,14 +8,23 @@ export function ScrollRestorationProvider(props: { children: ReactNode }) {
 	const scrolls = useRef<Map<string, number>>(new Map())
 	const setScroll = useCallback((scrollY: number) => scrolls.current.set(stackKey, scrollY), [stackKey])
 
-	useEffect(() => {
-        window.scrollTo({ top: scrolls.current.get(stackKey) ?? 0 })
+	useLayoutEffect(() => {
+    window.scrollTo({
+        top: scrolls.current.get(stackKey) ?? 0
+    })
+}, [stackKey])
 
-		const updateScroll = () => setScroll(window.scrollY)
+useEffect(() => {
+    const updateScroll = () => {
+        scrolls.current.set(stackKey, window.scrollY)
+    }
 
-		window.addEventListener('scroll', updateScroll)
-		return () => window.removeEventListener('scroll', updateScroll)
-	}, [stackKey, setScroll])
+    window.addEventListener('scroll', updateScroll, { passive: true })
+
+    return () => {
+        window.removeEventListener('scroll', updateScroll)
+    }
+}, [stackKey])
 
 	return (
 		<ScrollRestorationContext.Provider value={{ scroll: scrolls.current.get(stackKey) }}>
