@@ -1,33 +1,33 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { ScrollRestorationContext } from './contexts'
-import { useStackKey } from '../stackKey/contexts'
+import { useRef, type ReactNode } from 'react'
+import { ScrollRestorationContext, type ScrollRestorationStore } from './contexts'
+import { useStackKey } from '../keys/contexts'
+import { createVisibilityObserver } from '../useIsVisible'
 
 export function ScrollRestorationProvider(props: { children: ReactNode }) {
 	const { stackKey } = useStackKey()
-	
-	const scrolls = useRef<Map<string, number>>(new Map())
-	const setScroll = useCallback((scrollY: number) => scrolls.current.set(stackKey, scrollY), [stackKey])
 
-	useLayoutEffect(() => {
-    window.scrollTo({
-        top: scrolls.current.get(stackKey) ?? 0
-    })
-}, [stackKey])
+	const scrolls = useRef<Map<string, ScrollRestorationStore>>(new Map())
 
-useEffect(() => {
-    const updateScroll = () => {
-        scrolls.current.set(stackKey, window.scrollY)
-    }
+	const cleanupRef = useRef<() => void>(null)
+	const registerElementAtKey = (element: HTMLElement | null, elementKey: string) => {
+		cleanupRef.current?.()
+		cleanupRef.current = null
 
-    window.addEventListener('scroll', updateScroll, { passive: true })
+		if (!element) return
 
-    return () => {
-        window.removeEventListener('scroll', updateScroll)
-    }
-}, [stackKey])
+		const observer = createVisibilityObserver(([entry]) => {
+			if (entry.isIntersecting)
+				scrolls.current.set(stackKey, { elementKey, offset: entry.boundingClientRect.top, registerElementAtKey  })
+		})
+
+		observer.observe(element)
+		cleanupRef.current = () => observer.disconnect()
+	}
 
 	return (
-		<ScrollRestorationContext.Provider value={{ scroll: scrolls.current.get(stackKey) }}>
+		<ScrollRestorationContext.Provider
+			value={{ ...(scrolls.current.get(stackKey) ?? { elementKey: '', offset: 0 }), registerElementAtKey }}
+		>
 			{props.children}
 		</ScrollRestorationContext.Provider>
 	)

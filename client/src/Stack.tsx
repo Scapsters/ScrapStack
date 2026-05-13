@@ -1,4 +1,4 @@
-import { useContext, useMemo, useRef } from 'react'
+import { useContext, useLayoutEffect, useMemo, useRef } from 'react'
 import { useTweetQueue } from './lib/tweetQueue'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { ScrollAwareTopBar, TopBar } from './components/TopBar'
@@ -11,18 +11,26 @@ import { TweetCacheProvider } from './lib/tweetCache/provider'
 import { VirtualizerProvider } from './lib/virtualizer/provider'
 import { VirtualizedItemProvider } from './lib/virtualizer/VirtualizedItemProvider'
 import { ScrollRestorationProvider } from './lib/scrollRestoration/provider'
-import { StackKeyProvider } from './lib/stackKey/provider'
+import { BatchKeyProvider, StackKeyProvider } from './lib/keys/provider'
+import { ScrollRestorationItemProvider } from './lib/scrollRestoration/itemProvider'
+import { useScrollRestoration } from './lib/scrollRestoration/contexts'
+import { useVirtualizer } from './lib/virtualizer/contexts'
 
 export function StackManager() {
 	const location = useLocation()
-	const stackUsername = location.pathname.split('/').pop() ?? ''
-
 	const [params] = useSearchParams()
-	const tweetFilter = { stackUsername, ...getFilterFromParams(params) }
-	const tweetSorter = getSorterFromParams(params)
-	const firstTweetId = params.get('tweet_id')
-	const stackProps = { tweetFilter, tweetSorter, firstTweetId }
-	const stackKey = JSON.stringify(stackProps)
+
+	const [stackProps, stackKey] = useMemo(() => {
+		const stackUsername = location.pathname.split('/').pop() ?? ''
+
+		const tweetFilter = { stackUsername, ...getFilterFromParams(params) }
+		const tweetSorter = getSorterFromParams(params)
+		const firstTweetId = params.get('tweet_id')
+		const stackProps = { tweetFilter, tweetSorter, firstTweetId }
+		const stackKey = JSON.stringify(stackProps)
+
+		return [stackProps, stackKey]
+	}, [location.pathname, params])
 
 	return (
 		<>
@@ -51,6 +59,10 @@ export function Stack({
 
 	const location = useLocation()
 	const stackUsername = location.pathname.split('/').pop() ?? ''
+
+	const { elementKey, offset } = useScrollRestoration()
+	const { scrollToElement } = useVirtualizer()
+	useLayoutEffect(() => scrollToElement(elementKey, offset), [elementKey, offset, scrollToElement])
 
 	const [getFirstTweet, getNextTweet] = useMemo(() => {
 		const getFirstTweet = firstTweetId
@@ -82,13 +94,18 @@ export function Stack({
 					) : tweetBatches.length <= 0 ? (
 						<p>No Scraps found. Please try a different search.</p>
 					) : (
-						tweetBatches.map(batch => (
-							<VirtualizedItemProvider
-								virtualizationKey={batch.map(tweet => tweet.data.tweet_id).join(':')}
-							>
-								<TweetBatch batch={batch} />
-							</VirtualizedItemProvider>
-						))
+						tweetBatches.map(batch => {
+							const batchKey = batch.map(tweet => tweet.data.tweet_id).join(':')
+							return (
+								<BatchKeyProvider key={batchKey} batchKey={batchKey}>
+									<VirtualizedItemProvider>
+										<ScrollRestorationItemProvider>
+											<TweetBatch batch={batch} />
+										</ScrollRestorationItemProvider>
+									</VirtualizedItemProvider>
+								</BatchKeyProvider>
+							)
+						})
 					)}
 				</div>
 			</div>

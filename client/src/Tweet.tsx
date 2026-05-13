@@ -1,16 +1,27 @@
 import { useContext, useEffect, useMemo, useRef } from 'react'
-import { useIsVisible, useTweet } from './lib/tweetHooks'
+import { useTweet } from './lib/tweetHooks'
 import type { TweetWithBlobs } from './lib/tweetQueue'
 import { useUserContext } from './lib/userContext'
 import { ConfirmActionButton, CopyButton } from './components/ConfirmActionButton'
 import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from 'react-icons/go'
 import { Link } from 'react-router-dom'
 import { TrpcClient } from './trpc'
-import { useVirtualizedItemContext } from './lib/virtualizer/contexts'
+import { useVirtualizedItem } from './lib/virtualizer/contexts'
+import { useIsVisible } from './lib/useIsVisible'
+import { useScrollRestorationItem } from './lib/scrollRestoration/contexts'
 
 export function TweetBatch(props: { batch: TweetWithBlobs[] }) {
+	const registerVirtualizer = useVirtualizedItem().registerElement
+	const registerScrollRestoration = useScrollRestorationItem().registerElement
+
 	return (
-		<div ref={useVirtualizedItemContext().registerElement} className="flex flex-col gap-5">
+		<div
+			ref={element => {
+				registerVirtualizer(element)
+				registerScrollRestoration(element)
+			}}
+			className="flex flex-col gap-5"
+		>
 			{props.batch.map(tweetWithURLs => (
 				<Tweet key={tweetWithURLs.data.tweet_id} tweetWithURLs={tweetWithURLs} />
 			))}
@@ -23,7 +34,7 @@ export function Tweet(props: { tweetWithURLs: TweetWithBlobs }) {
 
 	const tweet = props.tweetWithURLs.data
 
-	const { markAsStable } = useVirtualizedItemContext()
+	const { markAsStable } = useVirtualizedItem()
 	const [mediaElements, isLoading, markAsViewed] = useTweet(props.tweetWithURLs, markAsStable)
 
 	const linkToCopy = useMemo(() => {

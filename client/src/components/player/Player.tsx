@@ -7,9 +7,9 @@ import {
 	MediaMuteButton,
 	MediaFullscreenButton,
 } from "media-chrome/react"
-import { useIsVisible } from "@/lib/tweetHooks"
 import { useContext, useRef } from "react"
 import { playerContext } from "@/components/player/context"
+import { useIsVisible } from "@/lib/useIsVisible"
 
 export default function Player(props: Parameters<typeof ReactPlayer>[0]) {
 

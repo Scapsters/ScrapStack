@@ -1,58 +1,64 @@
-import { useRef, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { useVirtualizer, VirtualizedItemContext } from './contexts'
-import { useIsVisible } from '../tweetHooks'
 import type { VirtualElementInfo } from './provider'
+import { useIsVisible } from '../useIsVisible'
+import { useBatchKey } from '../keys/contexts'
+import { useRegistration, type RegisterElement } from '../contexts'
 
-export function VirtualizedItemProvider({
-	virtualizationKey,
-	children,
-}: {
-	virtualizationKey: string
-	children: ReactNode
-}) {
+export function VirtualizedItemProvider({ children }: { children: ReactNode }) {
 	const { virtualElements, mergeVirtualElementsAtKey } = useVirtualizer()
+	const { batchKey: virtualizationKey } = useBatchKey()
 
-	const batchRef = useRef<HTMLDivElement>(null)
-
-	const markAsStable = () => {
-		const batch = batchRef.current
-		if (batch) mergeVirtualElementsAtKey(virtualizationKey, batch, { isStable: true })
-	}
-
-	const cleanupRef = useRef<() => void>(null)
-	const registerElement = (element: HTMLElement | null) => {
-		cleanupRef.current?.()
-		cleanupRef.current = null
-
-		if (!element) return
-
-		const updateSize = () =>
-			mergeVirtualElementsAtKey(virtualizationKey, element, { size: element.getBoundingClientRect() })
+	const [registerElement, elementRef] = useRegistration(element => {
+		const updateSize = () => {
+			const didChange = virtualElements.get(virtualizationKey)?.size === element.getBoundingClientRect()
+			if (didChange) mergeVirtualElementsAtKey(virtualizationKey, element, { size: element.getBoundingClientRect() })
+		}
 
 		const observer = new ResizeObserver(updateSize)
 		observer.observe(element)
-		cleanupRef.current = () => observer.disconnect()
+		return () => observer.disconnect()
+	})
+
+	const markAsStable = () => {
+		const element = elementRef.current
+		if (element) mergeVirtualElementsAtKey(virtualizationKey, element, { isStable: true })
 	}
 
-	const [isVisible] = useIsVisible(batchRef, true)
+	const [registerVirutalElement, virtualRef] = useRegistration(element =>
+		mergeVirtualElementsAtKey(virtualizationKey, element, { virtualElement: element })
+	)
+
+	const [isElementVisible] = useIsVisible(elementRef, true)
+	const [isVirtualElementVisible] = useIsVisible(virtualRef, true)
+	console.log(isVirtualElementVisible, virtualRef.current)
 
 	return (
-		<div
-			ref={batchRef}
-			className="flex flex-col gap-5"
-		>
-			<VirtualizedItemContext.Provider value={{ markAsStable, registerElement }}>
-				{virtualElements.get(virtualizationKey)?.isStable && !isVisible ? (
-					<Virtualized virtualElementInfo={virtualElements.get(virtualizationKey)} />
-				) : (
-					children
-				)}
-			</VirtualizedItemContext.Provider>
-		</div>
+		<VirtualizedItemContext.Provider value={{ markAsStable, registerElement }}>
+			{virtualElements.get(virtualizationKey)?.isStable && !isElementVisible && !isVirtualElementVisible ? (
+				<Virtualized
+					virtualElementInfo={virtualElements.get(virtualizationKey)}
+					registerElement={registerVirutalElement}
+				/>
+			) : (
+				children
+			)}
+		</VirtualizedItemContext.Provider>
 	)
 }
 
-function Virtualized({ virtualElementInfo }: { virtualElementInfo?: VirtualElementInfo }) {
+function Virtualized({
+	virtualElementInfo,
+	registerElement,
+}: {
+	virtualElementInfo?: VirtualElementInfo
+	registerElement: RegisterElement
+}) {
 	if (!virtualElementInfo) throw new Error(`Could not find virtual element info for an element.`)
-	return <div style={{ height: virtualElementInfo.size.height, width: virtualElementInfo.size.width }}></div>
+	return (
+		<div
+			ref={registerElement}
+			style={{ height: virtualElementInfo.size.height, width: virtualElementInfo.size.width }}
+		></div>
+	)
 }

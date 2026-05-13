@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import { createUseContext } from '../contexts'
+import { createUseContext, type RegisterElement } from '../contexts'
 import type { VirtualElementInfo, VirtualElementMap } from './provider'
 
 export type VirtualizerStore = {
@@ -9,12 +9,13 @@ export type VirtualizerStore = {
 		element: HTMLElement,
 		virtualElementInfo: Partial<VirtualElementInfo>
 	) => void
+	scrollToElement: (elementKey: string, offset?: number) => void
 }
 export const VirtualizerContext = createContext<VirtualizerStore | null>(null)
 export const useVirtualizer = createUseContext(VirtualizerContext)
 
 export const VirtualizedItemContext = createContext<{
 	markAsStable: () => void
-	registerElement: (element: HTMLElement | null) => void
+	registerElement: RegisterElement
 } | null>(null)
-export const useVirtualizedItemContext = createUseContext(VirtualizedItemContext)
+export const useVirtualizedItem = createUseContext(VirtualizedItemContext)

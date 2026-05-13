@@ -1,9 +1,10 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { VirtualizerContext } from './contexts'
-import { useStackKey } from '../stackKey/contexts'
+import { useStackKey } from '../keys/contexts'
 
 export type VirtualElementInfo = {
 	element: HTMLElement
+	virtualElement: HTMLElement
 	isStable: boolean
 	size: DOMRect
 }
@@ -17,6 +18,7 @@ export function VirtualizerProvider({ children }: { children: ReactNode }) {
 	const mergeVirtualElementsAtKey = useMemo(() => {
 		const getFallbackVirtualizerElement = (element: HTMLElement) => ({
 			element,
+			virtualElement: element,
 			size: element.getBoundingClientRect(),
 			isStable: false,
 		})
@@ -33,8 +35,29 @@ export function VirtualizerProvider({ children }: { children: ReactNode }) {
 			)
 	}, [stackKey])
 
+	const scrollToElement = useCallback(
+		(elementKey: string) => {
+			const virtualElementMap = virtualElementMaps.get(stackKey)
+			if (!virtualElementMap) return
+
+			const virtualElementInfo = virtualElementMap.get(elementKey)
+			if (!virtualElementInfo) return
+
+			const scrollIntoView =
+				virtualElementInfo.element.scrollIntoView || virtualElementInfo.virtualElement.scrollIntoView
+			scrollIntoView({ behavior: 'instant' })
+		},
+		[stackKey, virtualElementMaps]
+	)
+
 	return (
-		<VirtualizerContext.Provider value={{ virtualElements: virtualElementMaps.get(stackKey) ?? new Map(), mergeVirtualElementsAtKey }}>
+		<VirtualizerContext.Provider
+			value={{
+				virtualElements: virtualElementMaps.get(stackKey) ?? new Map(),
+				mergeVirtualElementsAtKey,
+				scrollToElement,
+			}}
+		>
 			{children}
 		</VirtualizerContext.Provider>
 	)

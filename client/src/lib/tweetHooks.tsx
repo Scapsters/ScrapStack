@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { TweetWithBlobs } from './tweetQueue'
 import Player from '@/components/player/Player'
 import FullscreenableImage from '@/components/Image'
@@ -54,41 +54,4 @@ export function usePromise<T>(promise: Promise<T>, defaultValue: T | null) {
 	}, [promise])
 
 	return [data, isLoading]
-}
-
-// https://dev.to/bcncodeschool/detecting-if-an-element-is-in-view-with-react-5b60
-export function useIsVisible(ref: RefObject<HTMLElement | null>, loose?: boolean) {
-	const [isVisible, setIsVisible] = useState(false)
-	const observerRef = useRef<IntersectionObserver | null>(null)
-
-	useEffect(() => {
-		const current = ref.current
-		if (!current) return
-
-		const observer = new IntersectionObserver(
-			([entry]) => {
-				setIsVisible(entry.isIntersecting)
-			},
-			{
-				root: null, // viewport
-				rootMargin: loose ? '200px 0px' : '-50% 0px -50% 0px', // loose includes anywhere on screen + space above top and bottm, while not strict leaves only a horizontal strip at mid-screen
-				threshold: 0, // trigger as soon as it touches that strip
-			}
-		)
-
-		observer.observe(current)
-		observerRef.current = observer
-
-		return () => {
-			observer.disconnect()
-			observerRef.current = null
-		}
-	}, [loose, ref])
-
-	const removeListener = () => {
-		observerRef.current?.disconnect()
-		observerRef.current = null
-	}
-
-	return [isVisible, removeListener] as const
 }
