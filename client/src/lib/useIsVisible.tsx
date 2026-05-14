@@ -1,33 +1,30 @@
-import { type RefObject, useState, useRef, useEffect } from "react"
+import { useState, useRef } from 'react'
+import { useRegistration } from './contexts'
 
 // https://dev.to/bcncodeschool/detecting-if-an-element-is-in-view-with-react-5b60
-export function useIsVisible(elementRef: RefObject<HTMLElement | null>, loose?: boolean) {
+export function useIsVisible(loose?: boolean, callback?: (entry: IntersectionObserverEntry) => void) {
 	const [isVisible, setIsVisible] = useState(false)
 	const observerRef = useRef<IntersectionObserver | null>(null)
 
-	useEffect(() => {
-		const element = elementRef.current
-		if (!element) return
-
+	const [registerElement] = useRegistration(element => {
 		const observer = createVisibilityObserver(([entry]) => {
-			setIsVisible(entry.isIntersecting)
+			if (entry.isIntersecting !== isVisible) setIsVisible(entry.isIntersecting)
 		}, loose)
 
 		observer.observe(element)
 		observerRef.current = observer
-
 		return () => {
 			observer.disconnect()
 			observerRef.current = null
 		}
-	}, [loose, elementRef])
+	})
 
 	const removeListener = () => {
 		observerRef.current?.disconnect()
 		observerRef.current = null
 	}
 
-	return [isVisible, removeListener] as const
+	return [isVisible, registerElement, removeListener] as const
 }
 
 export function createVisibilityObserver(callback: IntersectionObserverCallback, loose?: boolean) {

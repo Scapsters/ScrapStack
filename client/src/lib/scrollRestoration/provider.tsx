@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useCallback, useRef, type ReactNode } from 'react'
 import { ScrollRestorationContext, type ScrollRestorationStore } from './contexts'
 import { useStackKey } from '../keys/contexts'
 import { createVisibilityObserver } from '../useIsVisible'
@@ -9,7 +9,7 @@ export function ScrollRestorationProvider(props: { children: ReactNode }) {
 	const scrolls = useRef<Map<string, ScrollRestorationStore>>(new Map())
 
 	const cleanupRef = useRef<() => void>(null)
-	const registerElementAtKey = (element: HTMLElement | null, elementKey: string) => {
+	const registerElementAtKey = useCallback((element: HTMLElement | null, elementKey: string) => {
 		cleanupRef.current?.()
 		cleanupRef.current = null
 
@@ -22,7 +22,7 @@ export function ScrollRestorationProvider(props: { children: ReactNode }) {
 
 		observer.observe(element)
 		cleanupRef.current = () => observer.disconnect()
-	}
+	}, [stackKey])
 
 	return (
 		<ScrollRestorationContext.Provider

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef } from 'react'
+import { useContext, useMemo } from 'react'
 import { useTweet } from './lib/tweetHooks'
 import type { TweetWithBlobs } from './lib/tweetQueue'
 import { useUserContext } from './lib/userContext'
@@ -7,21 +7,17 @@ import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from 'react-icons/go'
 import { Link } from 'react-router-dom'
 import { TrpcClient } from './trpc'
 import { useVirtualizedItem } from './lib/virtualizer/contexts'
-import { useIsVisible } from './lib/useIsVisible'
+import { createVisibilityObserver } from './lib/useIsVisible'
 import { useScrollRestorationItem } from './lib/scrollRestoration/contexts'
+import { useRegistrators } from './lib/refs'
+import { useRegistration } from './lib/contexts'
 
 export function TweetBatch(props: { batch: TweetWithBlobs[] }) {
 	const registerVirtualizer = useVirtualizedItem().registerElement
 	const registerScrollRestoration = useScrollRestorationItem().registerElement
 
 	return (
-		<div
-			ref={element => {
-				registerVirtualizer(element)
-				registerScrollRestoration(element)
-			}}
-			className="flex flex-col gap-5"
-		>
+		<div ref={useRegistrators(registerVirtualizer, registerScrollRestoration)} className="flex flex-col gap-5">
 			{props.batch.map(tweetWithURLs => (
 				<Tweet key={tweetWithURLs.data.tweet_id} tweetWithURLs={tweetWithURLs} />
 			))}
@@ -50,15 +46,16 @@ export function Tweet(props: { tweetWithURLs: TweetWithBlobs }) {
 		return url.search
 	}, [tweet.handle])
 
-	const visibilityRef = useRef<HTMLDivElement>(null)
-	const [isVisible, removeListener] = useIsVisible(visibilityRef)
-	useEffect(() => {
-		if (isLoading) return
-		if (isVisible) {
-			markAsViewed()
-			removeListener()
-		}
-	}, [isLoading, isVisible, markAsViewed, removeListener])
+	const [registerTweetMarking] = useRegistration(element => {
+		const observer = createVisibilityObserver(([entry], observer) => {
+			if (!isLoading && entry.isIntersecting) {
+				markAsViewed()
+				observer.unobserve(element)
+			}
+		})
+		observer.observe(element)
+		return () => observer.unobserve(element)
+	})
 
 	const { adminSecret } = useUserContext()
 
@@ -72,7 +69,7 @@ export function Tweet(props: { tweetWithURLs: TweetWithBlobs }) {
 
 	return (
 		<div
-			ref={visibilityRef}
+			ref={registerTweetMarking}
 			key={props.tweetWithURLs.data.tweet_id}
 			className="border-b-1 border-black/10 w-auto py-5"
 		>
