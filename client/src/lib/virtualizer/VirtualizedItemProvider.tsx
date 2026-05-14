@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { useCallback, type ReactNode } from 'react'
 import { useVirtualizer, VirtualizedItemContext } from './contexts'
 import type { VirtualElementInfo } from './provider'
 import { useIsVisible } from '../useIsVisible'
@@ -10,9 +10,6 @@ export function VirtualizedItemProvider({ children }: { children: ReactNode }) {
 	const { virtualElements, mergeVirtualElementsAtKey } = useVirtualizer()
 	const { batchKey: virtualizationKey } = useBatchKey()
 
-	// Element
-	const [isElementVisible, registerVisibilityElement] = useIsVisible(true)
-	
 	const [registerVirtualizerElement, elementRef] = useRegistration(element => {
 		const updateSize = () =>
 			mergeVirtualElementsAtKey(virtualizationKey, element, { size: element.getBoundingClientRect() })
@@ -22,19 +19,20 @@ export function VirtualizedItemProvider({ children }: { children: ReactNode }) {
 		return () => observer.disconnect()
 	})
 
-	const markAsStable = () => {
+	const markAsStable = useCallback(() => {
 		const element = elementRef.current
 		if (element) mergeVirtualElementsAtKey(virtualizationKey, element, { isStable: true })
-	}
-	const registerElement = useRegistrators(registerVirtualizerElement, registerVisibilityElement)
+	}, [elementRef, mergeVirtualElementsAtKey, virtualizationKey])
 
-	// Virtual Element
-	const [isVirtualElementVisible, registerVirtualVisibilityElement, virtualVisibilityElement] = useIsVisible(true)
-	const isVirtualElementActive = document.body.contains(virtualVisibilityElement.current)
-	
 	const [registerVirutalVirtualizerElement] = useRegistration(element =>
 		mergeVirtualElementsAtKey(virtualizationKey, element, { virtualElement: element })
 	)
+
+	const [isElementVisible, registerVisibilityElement] = useIsVisible(true)
+	const [isVirtualElementVisible, registerVirtualVisibilityElement, virtualVisibilityElement] = useIsVisible(true)
+	const isVirtualElementActive = document.body.contains(virtualVisibilityElement.current)
+
+	const registerElement = useRegistrators(registerVirtualizerElement, registerVisibilityElement)
 	const registerVirtualElement = useRegistrators(registerVirutalVirtualizerElement, registerVirtualVisibilityElement)
 
 	return (
@@ -44,10 +42,10 @@ export function VirtualizedItemProvider({ children }: { children: ReactNode }) {
 				registerElement,
 			}}
 		>
-			{virtualElements.get(virtualizationKey)?.isStable // Stable
-				&& (!isElementVisible && !isVirtualElementVisible) // And neither are visible 
-				&& isVirtualElementActive // And if the virtual element is visible, that it is also active
-			? (
+			{virtualElements.get(virtualizationKey)?.isStable && // If stable,
+			!isElementVisible &&
+			!isVirtualElementVisible && // and neither are visible,
+			isVirtualElementActive ? ( // and if the virtual element is visible, that it is also active, then virtualize
 				<Virtualized
 					virtualElementInfo={virtualElements.get(virtualizationKey)}
 					registerElement={registerVirtualElement}

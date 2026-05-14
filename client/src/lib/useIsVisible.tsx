@@ -8,7 +8,6 @@ export function useIsVisible(loose?: boolean) {
 
 	const [registerElement, visibilityRef] = useRegistration(element => {
 		const observer = createVisibilityObserver(([entry]) => {
-			console.log(entry.target, entry.isIntersecting)
 			if (entry.isIntersecting !== isVisible) setIsVisible(entry.isIntersecting)
 		}, loose)
 
