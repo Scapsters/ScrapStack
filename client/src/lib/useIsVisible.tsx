@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useRegistration } from './contexts'
 
 // https://dev.to/bcncodeschool/detecting-if-an-element-is-in-view-with-react-5b60
-export function useIsVisible(loose?: boolean, callback?: (entry: IntersectionObserverEntry) => void) {
+export function useIsVisible(loose?: boolean) {
 	const [isVisible, setIsVisible] = useState(false)
 	const observerRef = useRef<IntersectionObserver | null>(null)
 
