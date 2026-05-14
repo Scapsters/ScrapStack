@@ -26,5 +26,6 @@ export function useRegistration(onRegister: (element: HTMLElement) => (() => voi
 
 		cleanupRef.current = onRegisterRef.current(element)
 	}, [])
+
 	return [registerElement, copyRef] as const
 }

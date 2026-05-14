@@ -6,8 +6,9 @@ export function useIsVisible(loose?: boolean) {
 	const [isVisible, setIsVisible] = useState(false)
 	const observerRef = useRef<IntersectionObserver | null>(null)
 
-	const [registerElement] = useRegistration(element => {
+	const [registerElement, visibilityRef] = useRegistration(element => {
 		const observer = createVisibilityObserver(([entry]) => {
+			console.log(entry.target, entry.isIntersecting)
 			if (entry.isIntersecting !== isVisible) setIsVisible(entry.isIntersecting)
 		}, loose)
 
@@ -19,12 +20,7 @@ export function useIsVisible(loose?: boolean) {
 		}
 	})
 
-	const removeListener = () => {
-		observerRef.current?.disconnect()
-		observerRef.current = null
-	}
-
-	return [isVisible, registerElement, removeListener] as const
+	return [isVisible, registerElement, visibilityRef] as const
 }
 
 export function createVisibilityObserver(callback: IntersectionObserverCallback, loose?: boolean) {
