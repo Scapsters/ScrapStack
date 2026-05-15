@@ -43,9 +43,13 @@ export function VirtualizerProvider({ children }: { children: ReactNode }) {
 			const virtualElementInfo = virtualElementMap.get(elementKey)
 			if (!virtualElementInfo) return
 
-			const scrollIntoView =
-				virtualElementInfo.element.scrollIntoView || virtualElementInfo.virtualElement.scrollIntoView
-			scrollIntoView({ behavior: 'instant' })
+			const element = virtualElementInfo.element
+			const virtualElement = virtualElementInfo.virtualElement
+			if (document.body.contains(element)) {
+				element.scrollIntoView({ behavior: 'instant' })
+			} else if (document.body.contains(virtualElement)) {
+				virtualElement.scrollIntoView({ behavior: 'instant' })
+			}
 		},
 		[stackKey, virtualElementMaps]
 	)
