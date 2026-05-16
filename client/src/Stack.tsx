@@ -1,6 +1,6 @@
-import { useContext, useLayoutEffect, useMemo, useRef } from 'react'
+import { useContext, useMemo, useRef } from 'react'
 import { useTweetQueue } from './lib/tweetQueue'
-import { useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { ScrollAwareTopBar, TopBar } from './components/TopBar'
 import Loader from './components/Loader'
 import { TrpcClient } from '@/trpc'
@@ -13,24 +13,26 @@ import { VirtualizedItemProvider } from './lib/virtualizer/VirtualizedItemProvid
 import { ScrollRestorationProvider } from './lib/scrollRestoration/provider'
 import { BatchKeyProvider, StackKeyProvider } from './lib/keys/provider'
 import { ScrollRestorationItemProvider } from './lib/scrollRestoration/itemProvider'
-import { useScrollRestoration } from './lib/scrollRestoration/contexts'
-import { useVirtualizer } from './lib/virtualizer/contexts'
 
 export function StackManager() {
 	const location = useLocation()
-	const [params] = useSearchParams()
 
 	const [stackProps, stackKey] = useMemo(() => {
+		const params = new URLSearchParams(location.search)
 		const stackUsername = location.pathname.split('/').pop() ?? ''
-
-		const tweetFilter = { stackUsername, ...getFilterFromParams(params) }
+		const tweetFilter = {
+			stackUsername,
+			...getFilterFromParams(params),
+		}
 		const tweetSorter = getSorterFromParams(params)
 		const firstTweetId = params.get('tweet_id')
-		const stackProps = { tweetFilter, tweetSorter, firstTweetId }
-		const stackKey = JSON.stringify(stackProps)
-
-		return [stackProps, stackKey]
-	}, [location.pathname, params])
+		const stackProps = {
+			tweetFilter,
+			tweetSorter,
+			firstTweetId,
+		}
+		return [stackProps, JSON.stringify(stackProps)]
+	}, [location.pathname, location.search])
 
 	return (
 		<>
@@ -59,10 +61,6 @@ export function Stack({
 
 	const location = useLocation()
 	const stackUsername = location.pathname.split('/').pop() ?? ''
-
-	const { elementKey, offset } = useScrollRestoration()
-	const { scrollToElement } = useVirtualizer()
-	useLayoutEffect(() => scrollToElement(elementKey, offset), [elementKey, offset, scrollToElement])
 
 	const [getFirstTweet, getNextTweet] = useMemo(() => {
 		const getFirstTweet = firstTweetId

@@ -4,7 +4,7 @@ import type { TweetWithBlobs } from './lib/tweetQueue'
 import { useUserContext } from './lib/userContext'
 import { ConfirmActionButton, CopyButton } from './components/ConfirmActionButton'
 import { GoHeart, GoPlus, GoSearch, GoSync, GoTrash } from 'react-icons/go'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { TrpcClient } from './trpc'
 import { useVirtualizedItem } from './lib/virtualizer/contexts'
 import { createVisibilityObserver } from './lib/useIsVisible'
@@ -39,12 +39,13 @@ export function Tweet(props: { tweetWithURLs: TweetWithBlobs }) {
 		url.searchParams.set('tweet_id', tweet.tweet_id)
 		return url.toString()
 	}, [tweet.tweet_id])
+
+	const routerLocation = useLocation()
 	const linkToSearch = useMemo(() => {
-		const url = new URL(location.href)
-		url.search = ''
-		url.searchParams.set('handle', tweet.handle)
-		return url.search
-	}, [tweet.handle])
+		const params = new URLSearchParams(routerLocation.search)
+		params.set('handle', tweet.handle)
+		return `?${params.toString()}`
+	}, [routerLocation.search, tweet.handle])
 
 	const [registerTweetMarking] = useRegistration(element => {
 		const observer = createVisibilityObserver(([entry], observer) => {
